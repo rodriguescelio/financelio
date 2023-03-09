@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS bank_account (
+  id UUID NOT NULL,
+  account_id UUID NOT NULL,
+  label CHARACTER VARYING (218) NOT NULL,
+  created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  CONSTRAINT bank_account_pk PRIMARY KEY (id),
+  CONSTRAINT bank_account_1_fk FOREIGN KEY (account_id) REFERENCES account (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
