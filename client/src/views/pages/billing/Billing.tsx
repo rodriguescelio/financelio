@@ -1,100 +1,33 @@
 import {
   ActionIcon,
   Button,
-  Checkbox,
   Flex,
-  FocusTrap,
   Group,
-  Modal,
-  NumberInput,
-  SegmentedControl,
-  Select,
   Table,
   Text,
-  TextInput,
   Title,
   Tooltip,
 } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
-import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconTrash } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
+import { BillType, billTypes } from '../../../models/enum/billTypes.enum';
 import http from '../../../services/http.service';
 import { formatDate, formatMoney } from '../../../utils/mask.util';
-import MoneyInput from '../../components/moneyInput/MoneyInput';
-
-enum BillType {
-  SINGLE = 'single',
-  RECURRENCE = 'recurrence',
-  INSTALLMENTS = 'installments',
-}
-
-const billTypes = [
-  { label: 'Cobrança única', value: BillType.SINGLE },
-  { label: 'Recorrência', value: BillType.RECURRENCE },
-  { label: 'Parcelado', value: BillType.INSTALLMENTS },
-];
+import BillingModal from './BillingModal';
 
 const MODAL_ID = 'modalInstallment';
 
 const Billing: FC = () => {
-  const form = useForm({
-    initialValues: {
-      type: 'single',
-      date: new Date(),
-      category: '',
-      card: '',
-      description: '',
-      amount: 0,
-      installments: 0,
-      isInstallmentAmount: false,
-    },
-  });
-
   const [modalOpen, setModalOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
 
-  const [cards, setCards] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-
-  const [loadingPersist, setLoadingPersist] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState('');
 
   useEffect(() => {
-    loadCards();
-    loadCategories();
     findAll();
   }, []);
-
-  const loadCards = async () => {
-    const [response, error] = await http.get<any[]>('/card/findAll');
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro inesperado ao carregar a página.',
-      });
-    }
-
-    setCards(response || []);
-  };
-
-  const loadCategories = async () => {
-    const [response, error] = await http.get<any[]>('/category/findAll');
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro inesperado ao carregar a página.',
-      });
-    }
-
-    setCategories(response || []);
-  };
 
   const findAll = async () => {
     const [response, error] = await http.get<any[]>('/bill/findAll');
@@ -111,26 +44,6 @@ const Billing: FC = () => {
   };
 
   const toggleModal = () => setModalOpen((p) => !p);
-
-  const onSubmit = async (formData: typeof form.values) => {
-    setLoadingPersist(true);
-
-    const [, error] = await http.post('/bill/create', formData);
-
-    setLoadingPersist(false);
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro inesperado ao salvar o registro.',
-      });
-    } else {
-      toggleModal();
-      form.reset();
-      findAll();
-    }
-  };
 
   const deleteSingleBill = async (billId: string) => {
     setLoadingDelete(billId);
@@ -251,6 +164,7 @@ const Billing: FC = () => {
           <thead>
             <tr>
               <th>Data</th>
+              <th>Data de pag.</th>
               <th>Descrição</th>
               <th>Categoria</th>
               <th>Cartão</th>
@@ -262,6 +176,7 @@ const Billing: FC = () => {
           <tbody>
             {data.map((it) => (
               <tr key={it.id}>
+                <td>{formatDate(it.buyDate)}</td>
                 <td>{formatDate(it.billDate)}</td>
                 <td>{getDescription(it)}</td>
                 <td>{it.category && it.category.label}</td>
@@ -288,83 +203,7 @@ const Billing: FC = () => {
           </tbody>
         </Table>
       )}
-      <Modal
-        opened={modalOpen}
-        onClose={toggleModal.bind(null, true)}
-        title="Lançamento"
-      >
-        <form onSubmit={form.onSubmit(onSubmit)}>
-          <FocusTrap active={modalOpen}>
-            <SegmentedControl
-              fullWidth={true}
-              data={billTypes}
-              mb="md"
-              {...form.getInputProps('type')}
-            />
-            <DateInput
-              label="Data da compra"
-              mb="md"
-              firstDayOfWeek={0}
-              valueFormat="DD/MM/YYYY"
-              withAsterisk={true}
-              {...form.getInputProps('date')}
-            />
-            <Select
-              mb="md"
-              label="Categoria"
-              searchable={true}
-              clearable={true}
-              data={categories.map((it) => ({ label: it.label, value: it.id }))}
-              {...form.getInputProps('category')}
-            />
-            <Select
-              mb="md"
-              label="Cartão"
-              searchable={true}
-              clearable={true}
-              data={cards.map((it) => ({ label: it.label, value: it.id }))}
-              {...form.getInputProps('card')}
-            />
-            <TextInput
-              mb="md"
-              label="Descrição"
-              withAsterisk={true}
-              data-autofocus={true}
-              {...form.getInputProps('description')}
-            />
-            <Flex>
-              <div style={{ flexGrow: 1 }}>
-                <MoneyInput
-                  label="Valor"
-                  data-autofocus={true}
-                  withAsterisk={true}
-                  {...form.getInputProps('amount')}
-                />
-              </div>
-              {form.values.type === BillType.INSTALLMENTS && (
-                <Checkbox
-                  label="Valor da parcela"
-                  style={{ marginTop: 32, marginLeft: 20 }}
-                  {...form.getInputProps('isInstallmentAmount')}
-                />
-              )}
-            </Flex>
-            {form.values.type === BillType.INSTALLMENTS && (
-              <NumberInput
-                mt="md"
-                label="Nº de parcelas"
-                withAsterisk={true}
-                {...form.getInputProps('installments')}
-              />
-            )}
-          </FocusTrap>
-          <Group position="right" mt="md">
-            <Button type="submit" loading={loadingPersist}>
-              Salvar
-            </Button>
-          </Group>
-        </form>
-      </Modal>
+      {modalOpen && <BillingModal onClose={toggleModal} />}
     </div>
   );
 };

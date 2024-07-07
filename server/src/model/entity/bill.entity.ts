@@ -1,5 +1,13 @@
 import { randomUUID } from 'crypto';
-import { AfterLoad, BeforeInsert, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  AfterLoad,
+  BeforeInsert,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { BillType } from '../enumerated/billType.enum';
 import { Account } from './account.entity';
 import { Card } from './card.entity';
@@ -7,7 +15,6 @@ import { Category } from './category.entity';
 
 @Entity({ name: 'bill' })
 export class Bill {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -50,6 +57,9 @@ export class Bill {
 
   @Column()
   active: boolean = true;
+
+  @Column({ name: 'generated_via_recurrence' })
+  generatedViaRecurrence: boolean = false;
 
   @Column({ name: 'created_at' })
   createdAt: Date = new Date();

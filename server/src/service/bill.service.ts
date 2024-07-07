@@ -12,7 +12,6 @@ import { BillDeleteRequestDTO } from 'src/model/dto/billDeleteRequest.dto';
 
 @Injectable()
 export class BillService {
-
   constructor(
     @InjectRepository(Bill)
     private billRepository: Repository<Bill>,
@@ -20,12 +19,13 @@ export class BillService {
     private cardRepository: Repository<Card>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {}
 
   async create(billDTO: BillDTO): Promise<Bill[]> {
     const date = moment(billDTO.date);
-    
+    const payDate = moment(billDTO.payDate, 'DD/MM/YYYY');
+
     let card: Card = null;
     let category = null;
 
@@ -50,21 +50,13 @@ export class BillService {
     const result = [];
 
     if (billDTO.type === BillType.INSTALLMENTS) {
-
-      const amount = billDTO.isInstallmentAmount 
-        ? billDTO.amount 
+      const amount = billDTO.isInstallmentAmount
+        ? billDTO.amount
         : billDTO.amount / billDTO.installments;
-      
+
+      const installmentDate = payDate.clone();
+
       for (let i = 0; i < billDTO.installments; i++) {
-        let installmentDate = date.clone().add(i + 1, 'month');
-
-        if (card) {
-          installmentDate.date(card.payDay);
-          if (installmentDate.date() > card.closeDay) {
-            installmentDate.add(1, 'month');
-          }
-        }
-
         const bill = new Bill();
 
         bill.account = this.authService.sessionAccount;
@@ -85,6 +77,8 @@ export class BillService {
         await this.billRepository.save(bill);
 
         result.push(bill);
+
+        installmentDate.add(1, 'month');
       }
     } else {
       const bill = new Bill();
@@ -94,7 +88,7 @@ export class BillService {
       bill.card = card;
       bill.type = billDTO.type;
       bill.buyDate = date.toDate();
-      bill.billDate = date.toDate();
+      bill.billDate = payDate.toDate();
       bill.description = billDTO.description;
       bill.amount = billDTO.amount;
 
@@ -102,7 +96,7 @@ export class BillService {
 
       result.push(bill);
     }
-    
+
     return result;
   }
 
@@ -114,13 +108,14 @@ export class BillService {
       },
       where: {
         account: {
-          id: this.authService.sessionAccount.id
+          id: this.authService.sessionAccount.id,
         },
+        generatedViaRecurrence: false,
       },
     });
   }
 
-  async deleteSingle(billId): Promise<void> {
+  async deleteSingle(billId: string): Promise<void> {
     const bill = await this.billRepository.findOneBy({
       account: {
         id: this.authService.sessionAccount.id,
@@ -140,7 +135,10 @@ export class BillService {
     await this.billRepository.delete({ id });
   }
 
-  async delete(billId, billDeleteRequest: BillDeleteRequestDTO): Promise<void> {
+  async delete(
+    billId: string,
+    billDeleteRequest: BillDeleteRequestDTO,
+  ): Promise<void> {
     const bill = await this.billRepository.findOne({
       relations: {
         rootBill: true,
@@ -164,7 +162,7 @@ export class BillService {
       if (bill.rootBill) {
         await this.billRepository.delete({
           rootBill: {
-            id: bill.rootBill.id, 
+            id: bill.rootBill.id,
           },
           installmentIndex: MoreThanOrEqual(bill.installmentIndex),
         });
