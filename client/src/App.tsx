@@ -12,6 +12,9 @@ import CreditCard from './views/pages/creditCard/CreditCard';
 import Billing from './views/pages/billing/Billing';
 import Category from './views/pages/category/Category';
 
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+
 import './App.scss';
 
 const router = createBrowserRouter([
@@ -51,9 +54,7 @@ function App() {
   return (
     <div className="app">
       <MantineProvider
-        withGlobalStyles={true}
-        withNormalizeCSS={true}
-        theme={{ colorScheme: 'dark' }}
+        defaultColorScheme="dark"
       >
         <Notifications position="top-right" />
         <Provider store={store}>

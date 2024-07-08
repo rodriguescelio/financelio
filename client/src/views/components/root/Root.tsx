@@ -3,35 +3,49 @@ import {
   AppShell,
   Burger,
   Group,
-  Header,
-  MediaQuery,
   Text,
   useMantineTheme,
 } from '@mantine/core';
 import { IconLogout } from '@tabler/icons-react';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AUTH_TOKEN_NAME } from '../../../constants';
 import http from '../../../services/http.service';
 import { RootState } from '../../../store';
 import { globalActions, GlobalState } from '../../../store/slices/global.slice';
 import Navbar from '../navbar/Navbar';
+import { useDisclosure } from '@mantine/hooks';
 
 const Root: FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useMantineTheme();
 
   const { account } = useSelector<RootState, GlobalState>(
     (state) => state.global
   );
 
-  const [opened, setOpened] = useState(false);
+  const [opened, { toggle }] = useDisclosure();
 
-  useEffect(() => {
-    loader();
-  }, []);
+  useEffect(
+    () => {
+      loader();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  useEffect(
+    () => {
+      if (opened) {
+        toggle();
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [location]
+  );
 
   const loader = async () => {
     const token =
@@ -48,8 +62,6 @@ const Root: FC = () => {
     }
   };
 
-  const toggle = () => setOpened((p) => !p);
-
   const logout = () => {
     window.localStorage.removeItem(AUTH_TOKEN_NAME);
     window.sessionStorage.removeItem(AUTH_TOKEN_NAME);
@@ -60,46 +72,43 @@ const Root: FC = () => {
     account && (
       <AppShell
         padding="md"
-        navbarOffsetBreakpoint="sm"
-        navbar={<Navbar opened={opened} />}
-        header={
-          <Header height={{ base: 50, md: 70 }} p="md">
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                height: '100%',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <MediaQuery largerThan="sm" styles={{ display: 'none' }}>
-                  <Burger
-                    opened={opened}
-                    onClick={toggle}
-                    size="sm"
-                    color={theme.colors.gray[6]}
-                    mr="xl"
-                  />
-                </MediaQuery>
-                <h2>financelio</h2>
-              </div>
-              <Group>
-                <Text sx={{ marginTop: 3 }}>{account.name}</Text>
-                <ActionIcon onClick={logout}>
-                  <IconLogout />
-                </ActionIcon>
-              </Group>
-            </div>
-          </Header>
-        }
+        header={{ height: 60 }}
+        navbar={{
+          width: 300,
+          breakpoint: 'sm',
+          collapsed: { mobile: !opened },
+        }}
         styles={{
           main: {
             background: theme.colors.dark[8],
           },
         }}
       >
-        <Outlet />
+        <AppShell.Header>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 10 }}>
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" style={{ marginRight: 10 }} />
+              <span style={{ fontSize: 25, verticalAlign: 'top', marginTop: 3 }}>financelio</span>
+            </div>
+            <Group>
+              <Text style={{ marginTop: 3 }}>{account.name}</Text>
+              <ActionIcon onClick={logout} variant="transparent" style={{ marginRight: 10 }}>
+                <IconLogout />
+              </ActionIcon>
+            </Group>
+          </div>
+        </AppShell.Header>
+        <Navbar opened={opened} />
+        <AppShell.Main>
+          <Outlet />
+        </AppShell.Main>
       </AppShell>
     )
   );

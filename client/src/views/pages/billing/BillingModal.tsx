@@ -221,7 +221,7 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
             />
           )}
         </FocusTrap>
-        <Group position="right" mt="md">
+        <Group justify="flex-end" mt="md">
           <Button type="submit" loading={loadingPersist}>
             Salvar
           </Button>

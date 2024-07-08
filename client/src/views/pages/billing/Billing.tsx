@@ -147,7 +147,7 @@ const Billing: FC = () => {
 
   return (
     <div
-      style={{ padding: 10, paddingRight: '1.5rem', boxSizing: 'border-box' }}
+      style={{ padding: '10px', boxSizing: 'border-box' }}
     >
       <Flex justify="space-between">
         <Title order={2}>Meus lançamentos</Title>
@@ -157,50 +157,52 @@ const Billing: FC = () => {
         <Table
           striped={true}
           highlightOnHover={true}
-          withBorder={true}
           withColumnBorders={true}
+          withTableBorder={true}
+          withRowBorders={true}
           mt="lg"
         >
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Data de pag.</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Cartão</th>
-              <th>Tipo</th>
-              <th>Valor</th>
-              <th style={{ width: 120 }}>Opções</th>
-            </tr>
-          </thead>
-          <tbody>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Data</Table.Th>
+              <Table.Th>Data de pag.</Table.Th>
+              <Table.Th>Descrição</Table.Th>
+              <Table.Th>Categoria</Table.Th>
+              <Table.Th>Cartão</Table.Th>
+              <Table.Th>Tipo</Table.Th>
+              <Table.Th>Valor</Table.Th>
+              <Table.Th style={{ width: 120 }}>Opções</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {data.map((it) => (
-              <tr key={it.id}>
-                <td>{formatDate(it.buyDate)}</td>
-                <td>{formatDate(it.billDate)}</td>
-                <td>{getDescription(it)}</td>
-                <td>{it.category && it.category.label}</td>
-                <td>{it.card && it.card.label}</td>
-                <td>
+              <Table.Tr key={it.id}>
+                <Table.Td>{formatDate(it.buyDate)}</Table.Td>
+                <Table.Td>{formatDate(it.billDate)}</Table.Td>
+                <Table.Td>{getDescription(it)}</Table.Td>
+                <Table.Td>{it.category && it.category.label}</Table.Td>
+                <Table.Td>{it.card && it.card.label}</Table.Td>
+                <Table.Td>
                   {billTypes.find((type) => type.value === it.type)?.label}
-                </td>
-                <td>R$ {formatMoney(it.amount)}</td>
-                <td>
-                  <Group position="center">
+                </Table.Td>
+                <Table.Td>R$ {formatMoney(it.amount)}</Table.Td>
+                <Table.Td>
+                  <Group justify="center">
                     <Tooltip label="Remover lançamento">
                       <ActionIcon
                         color="red"
                         onClick={deleteBill.bind(null, it)}
                         loading={loadingDelete === it.id}
+                        variant="transparent"
                       >
                         <IconTrash />
                       </ActionIcon>
                     </Tooltip>
                   </Group>
-                </td>
-              </tr>
+                </Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
+          </Table.Tbody>
         </Table>
       )}
       {modalOpen && <BillingModal onClose={toggleModal} />}

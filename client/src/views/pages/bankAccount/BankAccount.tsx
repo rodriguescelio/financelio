@@ -1,26 +1,29 @@
 import {
   ActionIcon,
   Button,
+  Card,
   Flex,
   FocusTrap,
+  Grid,
   Group,
+  Menu,
   Modal,
   SegmentedControl,
-  Table,
   Text,
   Textarea,
-  TextInput,
   Title,
   Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconCoin, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconCoin, IconDotsVertical, IconHistory, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
 import http from '../../../services/http.service';
 import { formatMoney } from '../../../utils/mask.util';
 import MoneyInput from '../../components/moneyInput/MoneyInput';
+import { useDisclosure } from '@mantine/hooks';
+import BankAccountModal from './BankAccountModal';
 
 const entryTypes = [
   { label: 'Crédito', value: 'credit' },
@@ -29,14 +32,7 @@ const entryTypes = [
 ];
 
 const BankAccount: FC = () => {
-  const formBankAccount = useForm({
-    initialValues: {
-      id: '',
-      label: '',
-    },
-  });
-
-  const formBankEntry = useForm({
+  const form = useForm({
     initialValues: {
       bankAccount: { id: '' },
       description: '',
@@ -45,12 +41,12 @@ const BankAccount: FC = () => {
     },
   });
 
-  const [modalBankAccountOpen, setModalBankAccountOpen] = useState(false);
-  const [modalBankEntryOpen, setModalBankEntryOpen] = useState(false);
-  const [loadingPersist, setLoadingPersist] = useState(false);
-  const [loadingDelete, setLoadingDelete] = useState('');
-
+  const [loading, setLoading] = useState(false);
+  const [edit, setEdit] = useState<any>(null);
   const [data, setData] = useState<any[]>([]);
+
+  const [bankAccountOpen, { toggle: toggleBankAccount }] = useDisclosure();
+  const [bankEntryOpen, { toggle: toggleBankEntry }] = useDisclosure();
 
   useEffect(() => {
     findAll();
@@ -70,51 +66,31 @@ const BankAccount: FC = () => {
     setData(response || []);
   };
 
-  const toggleBankAccountModal = () => setModalBankAccountOpen((p) => !p);
-  const toggleBankEntryModal = () => setModalBankEntryOpen((p) => !p);
+  const onCloseBankAccountModal = () => {
+    setEdit(null);
+    toggleBankAccount();
+    findAll();
+  };
 
   const openNewEntry = (bankAccountId: string) => {
-    formBankEntry.values.bankAccount.id = bankAccountId;
-    toggleBankEntryModal();
+    form.values.bankAccount.id = bankAccountId;
+    toggleBankEntry();
   };
 
   const openEditBankAccount = (bankAccount: any) => {
-    formBankAccount.values.id = bankAccount.id;
-    formBankAccount.values.label = bankAccount.label;
-    toggleBankAccountModal();
+    setEdit(bankAccount);
+    toggleBankAccount();
   };
 
-  const onSubmitBankAccount = async (
-    formData: typeof formBankAccount.values
-  ) => {
-    setLoadingPersist(true);
-
-    const [, error] = await http.post<any>('/bankAccount/persist', formData);
-
-    setLoadingPersist(false);
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro inesperado ao salvar o registro.',
-      });
-    } else {
-      toggleBankAccountModal();
-      formBankAccount.reset();
-      findAll();
-    }
-  };
-
-  const onSubmitBankEntry = async (formData: typeof formBankEntry.values) => {
-    setLoadingPersist(true);
+  const onSubmit = async (formData: typeof form.values) => {
+    setLoading(true);
 
     const [, error] = await http.post<any>(
       '/bankAccount/persistEntry',
       formData
     );
 
-    setLoadingPersist(false);
+    setLoading(false);
 
     if (error) {
       notifications.show({
@@ -123,16 +99,14 @@ const BankAccount: FC = () => {
         message: 'Ocorreu um erro inesperado ao salvar o registro.',
       });
     } else {
-      toggleBankEntryModal();
-      formBankEntry.reset();
-      formBankEntry.values.type = 'credit';
+      toggleBankEntry();
+      form.reset();
+      form.values.type = 'credit';
       findAll();
     }
   };
 
   const execDeleteBankAccount = async (bankAccountId: string) => {
-    setLoadingDelete(bankAccountId);
-
     const [, error] = await http.delete(`/bankAccount/delete/${bankAccountId}`);
 
     if (error) {
@@ -144,8 +118,6 @@ const BankAccount: FC = () => {
     } else {
       findAll();
     }
-
-    setLoadingDelete('');
   };
 
   const deleteBankAccount = (bankAccountId: string) => {
@@ -160,114 +132,95 @@ const BankAccount: FC = () => {
 
   return (
     <div
-      style={{ padding: 10, paddingRight: '1.5rem', boxSizing: 'border-box' }}
+      style={{ padding: '10px', boxSizing: 'border-box' }}
     >
       <Flex justify="space-between">
         <Title order={2}>Minhas contas</Title>
-        <Button onClick={toggleBankAccountModal}>Nova conta</Button>
+        <Tooltip label="Cadastrar nova conta" position="left-end">
+          <ActionIcon onClick={toggleBankAccount} size="lg">
+            <IconPlus />
+          </ActionIcon>
+        </Tooltip>
       </Flex>
-      {data.length > 0 && (
-        <Table
-          striped={true}
-          highlightOnHover={true}
-          withBorder={true}
-          withColumnBorders={true}
-          mt="lg"
-        >
-          <thead>
-            <tr>
-              <th>Conta</th>
-              <th style={{ width: 150 }}>Saldo</th>
-              <th style={{ width: 150 }}>Opções</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((it) => (
-              <tr key={it.id}>
-                <td>{it.label}</td>
-                <td align="right">R$ {formatMoney(it.amount)}</td>
-                <td>
-                  <Group position="center">
-                    <Tooltip label="Atualizar saldo">
-                      <ActionIcon
-                        color="blue"
+      <Grid mt={30}>
+        {data.map((it) => (
+          <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
+            <Card withBorder={true} shadow="sm" radius="md">
+              <Card.Section withBorder={true} inheritPadding={true} py="xs" pr={5}>
+                <Group justify="space-between">
+                  <Text fw={500}>{it.label}</Text>
+                  <Menu shadow="md" position="bottom-end" id={it.id}>
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray">
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconCoin color="teal" />}
                         onClick={openNewEntry.bind(null, it.id)}
                       >
-                        <IconCoin />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Editar conta">
-                      <ActionIcon
-                        color="orange"
+                        Atualizar saldo
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconHistory color="teal" />}
+                      >
+                        Histórico de movimentações
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconPencil color="orange" />}
                         onClick={openEditBankAccount.bind(null, it)}
                       >
-                        <IconPencil />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Remover conta">
-                      <ActionIcon
-                        color="red"
+                        Editar
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash color="red" />}
                         onClick={deleteBankAccount.bind(null, it.id)}
-                        loading={loadingDelete === it.id}
                       >
-                        <IconTrash />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
+                        Remover
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </Card.Section>
+              <Text mt="sm" c="dimmed" size="sm">
+                <Group justify="space-between">
+                  <Text c="white">Saldo atual</Text>
+                  <Text c="teal">R$ {formatMoney(it.amount)}</Text>
+                </Group>
+              </Text>
+            </Card>
+          </Grid.Col>
+        ))}
+      </Grid>
+      {bankAccountOpen && <BankAccountModal edit={edit} onClose={onCloseBankAccountModal} />}
       <Modal
-        opened={modalBankAccountOpen}
-        onClose={toggleBankAccountModal}
-        title="Conta"
-      >
-        <form onSubmit={formBankAccount.onSubmit(onSubmitBankAccount)}>
-          <FocusTrap active={modalBankAccountOpen}>
-            <TextInput
-              label="Conta"
-              withAsterisk={true}
-              data-autofocus={true}
-              {...formBankAccount.getInputProps('label')}
-            />
-          </FocusTrap>
-          <Group position="right" mt="md">
-            <Button type="submit" loading={loadingPersist}>
-              Salvar
-            </Button>
-          </Group>
-        </form>
-      </Modal>
-      <Modal
-        opened={modalBankEntryOpen}
-        onClose={toggleBankEntryModal}
+        opened={bankEntryOpen}
+        onClose={toggleBankEntry}
         title="Saldo em conta"
       >
-        <form onSubmit={formBankEntry.onSubmit(onSubmitBankEntry)}>
-          <FocusTrap active={modalBankEntryOpen}>
+        <form onSubmit={form.onSubmit(onSubmit)}>
+          <FocusTrap active={bankEntryOpen}>
             <SegmentedControl
               fullWidth={true}
               data={entryTypes}
               mb="md"
-              {...formBankEntry.getInputProps('type')}
+              {...form.getInputProps('type')}
             />
             <MoneyInput
               label="Valor"
               data-autofocus={true}
               withAsterisk={true}
-              {...formBankEntry.getInputProps('amount')}
+              {...form.getInputProps('amount')}
             />
             <Textarea
               mt="md"
               label="Descrição"
-              {...formBankEntry.getInputProps('description')}
+              {...form.getInputProps('description')}
             />
           </FocusTrap>
-          <Group position="right" mt="md">
-            <Button type="submit" loading={loadingPersist}>
+          <Group justify="flex-end" mt="md">
+            <Button type="submit" loading={loading}>
               Salvar
             </Button>
           </Group>

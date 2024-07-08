@@ -1,43 +1,29 @@
 import {
   ActionIcon,
-  Button,
+  Card,
   Flex,
-  FocusTrap,
   Grid,
   Group,
-  Modal,
-  NumberInput,
-  Table,
+  Menu,
+  Progress,
   Text,
-  TextInput,
   Title,
   Tooltip,
 } from '@mantine/core';
-import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconDotsVertical, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
 import http from '../../../services/http.service';
 import { formatMoney } from '../../../utils/mask.util';
-import MoneyInput from '../../components/moneyInput/MoneyInput';
+import CreditCardModal from './CreditCardModal';
+import { useDisclosure } from '@mantine/hooks';
 
 const CreditCard: FC = () => {
-  const form = useForm({
-    initialValues: {
-      id: '',
-      label: '',
-      amountLimit: 0,
-      closeDay: 1,
-      payDay: 1,
-    },
-  });
+  const [opened, { toggle }] = useDisclosure();
 
-  const [modalOpen, setModalOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
-
-  const [loadingPersist, setLoadingPersist] = useState(false);
-  const [loadingDelete, setLoadingDelete] = useState('');
+  const [edit, setEdit] = useState<any>(null);
 
   useEffect(() => {
     findAll();
@@ -57,42 +43,20 @@ const CreditCard: FC = () => {
     setData(response || []);
   };
 
-  const toggleModal = () => setModalOpen((p) => !p);
-
-  const onSubmit = async (formData: typeof form.values) => {
-    setLoadingPersist(true);
-
-    const [, error] = await http.post<any>('/card/persist', formData);
-
-    setLoadingPersist(false);
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro inesperado ao salvar o registro.',
-      });
-    } else {
-      toggleModal();
-      form.reset();
-      form.values.amountLimit = 0;
+  const onCloseModal = () => {
+    if (opened) {
+      setEdit(null);
+      toggle();
       findAll();
     }
   };
 
   const openEdit = (card: any) => {
-    form.values.id = card.id;
-    form.values.label = card.label;
-    form.values.amountLimit = card.amountLimit;
-    form.values.closeDay = card.closeDay;
-    form.values.payDay = card.payDay;
-
-    toggleModal();
+    setEdit(card);
+    toggle();
   };
 
   const execDeleteCard = async (cardId: string) => {
-    setLoadingDelete(cardId);
-
     const [, error] = await http.delete(`/card/delete/${cardId}`);
 
     if (error) {
@@ -104,8 +68,6 @@ const CreditCard: FC = () => {
     } else {
       findAll();
     }
-
-    setLoadingDelete('');
   };
 
   const deleteCard = (cardId: string) => {
@@ -120,104 +82,67 @@ const CreditCard: FC = () => {
 
   return (
     <div
-      style={{ padding: 10, paddingRight: '1.5rem', boxSizing: 'border-box' }}
+      style={{ padding: '10px', boxSizing: 'border-box' }}
     >
       <Flex justify="space-between">
         <Title order={2}>Meus cartões</Title>
-        <Button onClick={toggleModal}>Novo cartão</Button>
+        <Tooltip label="Cadastrar novo cartão" position="left-end">
+          <ActionIcon onClick={toggle} size="lg">
+            <IconPlus />
+          </ActionIcon>
+        </Tooltip>
       </Flex>
-      {data.length > 0 && (
-        <Table
-          striped={true}
-          highlightOnHover={true}
-          withBorder={true}
-          withColumnBorders={true}
-          mt="lg"
-        >
-          <thead>
-            <tr>
-              <th>Conta</th>
-              <th style={{ width: 150 }}>Limite</th>
-              <th style={{ width: 160 }}>Dia do Fechamento</th>
-              <th style={{ width: 160 }}>Dia do Vencimento</th>
-              <th style={{ width: 120 }}>Opções</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((it) => (
-              <tr key={it.id}>
-                <td>{it.label}</td>
-                <td align="right">R$ {formatMoney(it.amountLimit)}</td>
-                <td align="right">{it.closeDay}</td>
-                <td align="right">{it.payDay}</td>
-                <td>
-                  <Group position="center">
-                    <Tooltip label="Editar cartão">
-                      <ActionIcon
-                        color="orange"
+       <Grid mt={30}>
+        {data.map((it) => (
+          <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
+            <Card withBorder={true} shadow="sm" radius="md">
+              <Card.Section withBorder={true} inheritPadding={true} py="xs" pr={5}>
+                <Group justify="space-between">
+                  <Text fw={500}>{it.label}</Text>
+                  <Menu shadow="md" position="bottom-end" id={it.id}>
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray">
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconPencil color="orange" />}
                         onClick={openEdit.bind(null, it)}
                       >
-                        <IconPencil />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Remover cartão">
-                      <ActionIcon
-                        color="red"
+                        Editar
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash color="red" />}
                         onClick={deleteCard.bind(null, it.id)}
-                        loading={loadingDelete === it.id}
                       >
-                        <IconTrash />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-      <Modal opened={modalOpen} onClose={toggleModal} title="Cartão">
-        <form onSubmit={form.onSubmit(onSubmit)}>
-          <FocusTrap active={modalOpen}>
-            <TextInput
-              label="Nome"
-              withAsterisk={true}
-              data-autofocus={true}
-              mb="md"
-              {...form.getInputProps('label')}
-            />
-            <MoneyInput
-              label="Limite"
-              data-autofocus={true}
-              withAsterisk={true}
-              {...form.getInputProps('amountLimit')}
-            />
-            <Grid mt="md">
-              <Grid.Col span={6}>
-                <NumberInput
-                  min={0}
-                  max={31}
-                  label="Dia do fechamento"
-                  {...form.getInputProps('closeDay')}
-                />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <NumberInput
-                  min={0}
-                  max={31}
-                  label="Dia do vencimento"
-                  {...form.getInputProps('payDay')}
-                />
-              </Grid.Col>
-            </Grid>
-          </FocusTrap>
-          <Group position="right" mt="md">
-            <Button type="submit" loading={loadingPersist}>
-              Salvar
-            </Button>
-          </Group>
-        </form>
-      </Modal>
+                        Remover
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </Card.Section>
+              <Text mt="sm" c="dimmed" size="sm">
+                <Group justify="space-between">
+                  <Flex direction="column">
+                    <Text c="gray.5">Utilizado</Text>
+                    <Text c="gray.5">R$ 1.000,20</Text>
+                  </Flex>
+                  <Flex direction="column" align="flex-end">
+                    <Text c="gray.5">Disponível</Text>
+                    <Text c="gray.5">R$ 1.000,20</Text>
+                  </Flex>
+                </Group>
+                <Progress value={33} size="xl" />
+                <Text c="gray.5" mt={20}>Limite total: R$ {formatMoney(it.amountLimit)}</Text>
+                <Text c="gray.5">Dia do fechamento: 04</Text>
+                <Text c="gray.5">Dia do vencimento: 10</Text>
+              </Text>
+            </Card>
+          </Grid.Col>
+        ))}
+      </Grid>
+      {opened && <CreditCardModal edit={edit} onClose={onCloseModal} />}
     </div>
   );
 };

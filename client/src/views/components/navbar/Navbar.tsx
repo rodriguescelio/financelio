@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { Navbar as MantineNavbar, ScrollArea } from '@mantine/core';
+import { AppShell, ScrollArea } from '@mantine/core';
 import {
   IconBookmark,
   IconBuildingBank,
@@ -11,13 +11,12 @@ import NavLink from '../navLink/NavLink';
 
 const Navbar: FC<{ opened: boolean }> = ({ opened }) => {
   return (
-    <MantineNavbar
+    <AppShell.Navbar
       p="md"
-      hiddenBreakpoint="sm"
       hidden={!opened}
       width={{ sm: 200, lg: 300 }}
     >
-      <MantineNavbar.Section grow component={ScrollArea} mx="-xs" px="xs">
+      {/* <MantineNavbar.Section grow component={ScrollArea} mx="-xs" px="xs"> */}
         <NavLink
           color="blue"
           icon={<IconHome size="1rem" />}
@@ -48,8 +47,8 @@ const Navbar: FC<{ opened: boolean }> = ({ opened }) => {
           label="Minhas contas"
           to="/bankAccount"
         />
-      </MantineNavbar.Section>
-    </MantineNavbar>
+      {/* </MantineNavbar.Section> */}
+    </AppShell.Navbar>
   );
 };
 

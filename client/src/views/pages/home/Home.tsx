@@ -46,16 +46,18 @@ const Home: FC = () => {
     return `R$ ${formatMoney(total)}`;
   };
 
+  return <></>;
+
   return (
     <div
-      style={{ padding: 10, paddingRight: '1.5rem', boxSizing: 'border-box' }}
+      style={{ padding: '10px', boxSizing: 'border-box' }}
     >
       <Flex justify="center">
-        <ActionIcon mt={4} onClick={prev}>
+        <ActionIcon mt={4} onClick={prev} variant="transparent">
           <IconArrowLeft />
         </ActionIcon>
         <Title mx={20}>{ref}</Title>
-        <ActionIcon mt={4} onClick={next}>
+        <ActionIcon mt={4} onClick={next} variant="transparent">
           <IconArrowRight />
         </ActionIcon>
       </Flex>
@@ -65,19 +67,18 @@ const Home: FC = () => {
       {data.length > 0 && (
         <Table
           striped={true}
-          withBorder={true}
           withColumnBorders={true}
           mt="lg"
         >
-          <thead>
-            <tr>
-              <th>Cartão</th>
-              <th style={{ width: 130 }}>Data</th>
-              <th>Compra</th>
-              <th style={{ width: 150 }}>Valor</th>
-            </tr>
-          </thead>
-          <tbody>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Cartão</Table.Th>
+              <Table.Th style={{ width: 130 }}>Data</Table.Th>
+              <Table.Th>Compra</Table.Th>
+              <Table.Th style={{ width: 150 }}>Valor</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {data.flatMap((card) => {
               let total = 0;
 
@@ -85,69 +86,40 @@ const Home: FC = () => {
                 total += bill.amount;
 
                 return (
-                  <tr key={bill.id}>
+                  <Table.Tr key={bill.id}>
                     {index === 0 && (
-                      <td rowSpan={card.bills.length + 1} valign="top">
+                      <Table.Td rowSpan={card.bills.length + 1} valign="top">
                         {card.label}
-                      </td>
+                      </Table.Td>
                     )}
-                    <td align="center">{formatDate(bill.buyDate)}</td>
-                    <td>
+                    <Table.Td align="center">{formatDate(bill.buyDate)}</Table.Td>
+                    <Table.Td>
                       {bill.description}{' '}
                       {bill.type === 'installments' &&
                         `(${bill.installmentIndex}/${bill.installments})`}
-                    </td>
-                    <td align="right">R$ {formatMoney(bill.amount)}</td>
-                  </tr>
+                    </Table.Td>
+                    <Table.Td align="right">R$ {formatMoney(bill.amount)}</Table.Td>
+                  </Table.Tr>
                 );
               });
 
               bills.push(
-                <tr key={`${card.id}-subtotal`}>
-                  <td colSpan={2}>
+                <Table.Tr key={`${card.id}-subtotal`}>
+                  <Table.Td colSpan={2}>
                     <b>Subtotal</b>
-                  </td>
-                  <td align="right">
+                  </Table.Td>
+                  <Table.Td align="right">
                     <b>R$ {formatMoney(total)}</b>
-                  </td>
-                </tr>,
-                <tr key={`${card.id}-divider`}>
-                  <td colSpan={4} />
-                </tr>
+                  </Table.Td>
+                </Table.Tr>,
+                <Table.Tr key={`${card.id}-divider`}>
+                  <Table.Td colSpan={4} />
+                </Table.Tr>
               );
 
               return bills;
             })}
-            {/* {data.map((it) => (
-              <tr key={it.id}>
-                <td>{it.label}</td>
-                <td align="right">R$ {formatMoney(it.amountLimit)}</td>
-                <td align="right">{it.closeDay}</td>
-                <td align="right">{it.payDay}</td>
-                <td>
-                  <Group position="center">
-                    <Tooltip label="Editar cartão">
-                      <ActionIcon
-                        color="orange"
-                        onClick={openEdit.bind(null, it)}
-                      >
-                        <IconPencil />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Remover cartão">
-                      <ActionIcon
-                        color="red"
-                        onClick={deleteCard.bind(null, it.id)}
-                        loading={loadingDelete === it.id}
-                      >
-                        <IconTrash />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </td>
-              </tr>
-            ))} */}
-          </tbody>
+          </Table.Tbody>
         </Table>
       )}
     </div>
