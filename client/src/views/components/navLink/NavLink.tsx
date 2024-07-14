@@ -6,7 +6,6 @@ import {
   UnstyledButton,
   useMantineTheme,
 } from '@mantine/core';
-import { weekdays } from 'moment';
 import { FC } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import classes from './NavLink.module.css';

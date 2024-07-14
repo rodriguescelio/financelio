@@ -19,6 +19,8 @@ import { BillType, billTypes } from '../../../models/enum/billTypes.enum';
 import http from '../../../services/http.service';
 import { BR_DATE_FORMAT } from '../../../utils/mask.util';
 import MoneyInput from '../../components/moneyInput/MoneyInput';
+import { toSelect } from '../../../utils/form.util';
+import Tags from '../../components/tags/Tags';
 
 interface BillingModalProps {
   onClose: () => void;
@@ -41,6 +43,7 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [cards, setCards] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [payDates, setPayDates] = useState<any[]>([]);
 
   const [loadingPersist, setLoadingPersist] = useState(false);
@@ -48,11 +51,16 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
   useEffect(() => {
     loadCards();
     loadCategories();
+    loadTags();
   }, []);
 
-  useEffect(() => {
-    calculatePayDates();
-  }, [form.values.card]);
+  useEffect(
+    () => {
+      calculatePayDates();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.card]
+  );
 
   const loadCards = async () => {
     const [response, error] = await http.get<any[]>('/card/findAll');
@@ -80,6 +88,20 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
     }
 
     setCategories(response || []);
+  };
+
+  const loadTags = async () => {
+    const [response, error] = await http.get<any[]>('/tag/findAll');
+
+    if (error) {
+      notifications.show({
+        color: 'red',
+        title: 'Erro',
+        message: 'Ocorreu um erro inesperado ao carregar a página.',
+      });
+    }
+
+    setTags(response || []);
   };
 
   const calculatePayDates = () => {
@@ -138,6 +160,8 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
     }
   };
 
+  const renderTag = () => {};
+
   return (
     <Modal opened={true} onClose={onClose} title="Lançamento">
       <form onSubmit={form.onSubmit(onSubmit)}>
@@ -148,55 +172,8 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
             mb="md"
             {...form.getInputProps('type')}
           />
-          <DateInput
-            label="Data da compra"
-            mb="md"
-            firstDayOfWeek={0}
-            valueFormat="DD/MM/YYYY"
-            withAsterisk={true}
-            {...form.getInputProps('date')}
-          />
-          <Select
-            mb="md"
-            label="Categoria"
-            searchable={true}
-            clearable={true}
-            data={categories.map((it) => ({
-              label: it.label,
-              value: it.id,
-            }))}
-            {...form.getInputProps('category')}
-          />
-          <Select
-            mb="md"
-            label="Cartão"
-            searchable={true}
-            clearable={true}
-            data={cards.map((it) => ({ label: it.label, value: it.id }))}
-            {...form.getInputProps('card')}
-          />
-          <Select
-            mb="md"
-            label={
-              form.values.type === BillType.SINGLE
-                ? 'Data do pagamento'
-                : 'Data do primeiro pagamento'
-            }
-            searchable={true}
-            clearable={true}
-            data={payDates}
-            withAsterisk={true}
-            {...form.getInputProps('payDate')}
-          />
-          <TextInput
-            mb="md"
-            label="Descrição"
-            withAsterisk={true}
-            data-autofocus={true}
-            {...form.getInputProps('description')}
-          />
           <Flex>
-            <div style={{ flexGrow: 1 }}>
+            <div style={{ flexGrow: 1, marginBottom: 'var(--mantine-spacing-md)' }}>
               <MoneyInput
                 label="Valor"
                 data-autofocus={true}
@@ -214,12 +191,56 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
           </Flex>
           {form.values.type === BillType.INSTALLMENTS && (
             <NumberInput
-              mt="md"
+              mb="md"
               label="Nº de parcelas"
               withAsterisk={true}
               {...form.getInputProps('installments')}
             />
           )}
+          <TextInput
+            mb="md"
+            label="Descrição"
+            withAsterisk={true}
+            {...form.getInputProps('description')}
+          />
+          <DateInput
+            label="Data da compra"
+            mb="md"
+            firstDayOfWeek={0}
+            valueFormat="DD/MM/YYYY"
+            withAsterisk={true}
+            {...form.getInputProps('date')}
+          />
+          <Select
+            mb="md"
+            label="Categoria"
+            searchable={true}
+            clearable={true}
+            data={toSelect(categories)}
+            {...form.getInputProps('category')}
+          />
+          <Tags label="Marcadores" data={toSelect(tags)} mb="md" {...form.getInputProps('tags')} />
+          <Select
+            mb="md"
+            label="Cartão"
+            searchable={true}
+            clearable={true}
+            data={toSelect(cards)}
+            {...form.getInputProps('card')}
+          />
+          <Select
+            mb="md"
+            label={
+              form.values.type === BillType.SINGLE
+                ? 'Data do pagamento'
+                : 'Data do primeiro pagamento'
+            }
+            searchable={true}
+            clearable={true}
+            data={payDates}
+            withAsterisk={true}
+            {...form.getInputProps('payDate')}
+          />
         </FocusTrap>
         <Group justify="flex-end" mt="md">
           <Button type="submit" loading={loadingPersist}>

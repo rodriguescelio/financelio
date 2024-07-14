@@ -93,8 +93,8 @@ const CreditCard: FC = () => {
         </Tooltip>
       </Flex>
        <Grid mt={30}>
-        {data.map((it) => (
-          <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
+        {data.map((it, index) => (
+          <Grid.Col span={{ base: 12, md: 6, lg: 4 }} key={index}>
             <Card withBorder={true} shadow="sm" radius="md">
               <Card.Section withBorder={true} inheritPadding={true} py="xs" pr={5}>
                 <Group justify="space-between">
@@ -126,17 +126,17 @@ const CreditCard: FC = () => {
                 <Group justify="space-between">
                   <Flex direction="column">
                     <Text c="gray.5">Utilizado</Text>
-                    <Text c="gray.5">R$ 1.000,20</Text>
+                    <Text c="gray.5">R$ {formatMoney(it.amountUsed)}</Text>
                   </Flex>
                   <Flex direction="column" align="flex-end">
                     <Text c="gray.5">Disponível</Text>
-                    <Text c="gray.5">R$ 1.000,20</Text>
+                    <Text c="gray.5">R$ {formatMoney(it.amountLimit - it.amountUsed)}</Text>
                   </Flex>
                 </Group>
-                <Progress value={33} size="xl" />
+                <Progress value={(it.amountUsed * 100) / it.amountLimit} size="xl" />
                 <Text c="gray.5" mt={20}>Limite total: R$ {formatMoney(it.amountLimit)}</Text>
-                <Text c="gray.5">Dia do fechamento: 04</Text>
-                <Text c="gray.5">Dia do vencimento: 10</Text>
+                <Text c="gray.5">Dia do fechamento: {it.closeDay.toString().padStart(2, '0')}</Text>
+                <Text c="gray.5">Dia do vencimento: {it.payDay.toString().padStart(2, '0')}</Text>
               </Text>
             </Card>
           </Grid.Col>

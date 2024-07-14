@@ -1,8 +1,10 @@
 import {
   ActionIcon,
+  Badge,
   Button,
   Flex,
   Group,
+  Menu,
   Table,
   Text,
   Title,
@@ -10,20 +12,34 @@ import {
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconTrash } from '@tabler/icons-react';
+import { IconBookmarkFilled, IconCreditCard, IconDotsVertical, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
-import { BillType, billTypes } from '../../../models/enum/billTypes.enum';
+import { BillType } from '../../../models/enum/billTypes.enum';
 import http from '../../../services/http.service';
 import { formatDate, formatMoney } from '../../../utils/mask.util';
 import BillingModal from './BillingModal';
+import { useDisclosure } from '@mantine/hooks';
+import classes from './Billing.module.css';
 
 const MODAL_ID = 'modalInstallment';
 
+interface ItemBadgeProps {
+  icon: any;
+  label: string;
+  color: string;
+}
+
+const ItemBadge: FC<ItemBadgeProps> = ({ icon: Icon, label, color }) => (
+  <Badge color={color} mr="sm" variant="light" mt={7}>
+    <Icon size={16} className={classes.icon} />
+    {label}
+  </Badge>
+);
+
 const Billing: FC = () => {
-  const [modalOpen, setModalOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
 
-  const [loadingDelete, setLoadingDelete] = useState('');
+  const [opened, { toggle }] = useDisclosure();
 
   useEffect(() => {
     findAll();
@@ -43,11 +59,14 @@ const Billing: FC = () => {
     setData(response || []);
   };
 
-  const toggleModal = () => setModalOpen((p) => !p);
+  const toggleModal = () => {
+    if (opened) {
+      toggle();
+      findAll();
+    }
+  };
 
   const deleteSingleBill = async (billId: string) => {
-    setLoadingDelete(billId);
-
     const [, error] = await http.delete(`/bill/deleteSingle/${billId}`);
 
     if (error) {
@@ -59,8 +78,6 @@ const Billing: FC = () => {
     } else {
       findAll();
     }
-
-    setLoadingDelete('');
   };
 
   const deleteInstallmentSingle = (billId: string) => {
@@ -70,7 +87,6 @@ const Billing: FC = () => {
 
   const deleteInstallment = async (billId: string, type: string) => {
     modals.close(MODAL_ID);
-    setLoadingDelete(billId);
 
     const [, error] = await http.post(`/bill/delete/${billId}`, { type });
 
@@ -83,8 +99,6 @@ const Billing: FC = () => {
     } else {
       findAll();
     }
-
-    setLoadingDelete('');
   };
 
   const deleteBill = (bill: any) => {
@@ -151,61 +165,88 @@ const Billing: FC = () => {
     >
       <Flex justify="space-between">
         <Title order={2}>Meus lançamentos</Title>
-        <Button onClick={toggleModal.bind(null, true)}>Novo lançamento</Button>
+        <Tooltip label="Cadastrar novo lançamento" position="left-end">
+          <ActionIcon onClick={toggle} size="lg">
+            <IconPlus />
+          </ActionIcon>
+        </Tooltip>
       </Flex>
       {data.length > 0 && (
         <Table
           striped={true}
-          highlightOnHover={true}
           withColumnBorders={true}
           withTableBorder={true}
           withRowBorders={true}
           mt="lg"
         >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Data</Table.Th>
-              <Table.Th>Data de pag.</Table.Th>
-              <Table.Th>Descrição</Table.Th>
-              <Table.Th>Categoria</Table.Th>
-              <Table.Th>Cartão</Table.Th>
-              <Table.Th>Tipo</Table.Th>
-              <Table.Th>Valor</Table.Th>
-              <Table.Th style={{ width: 120 }}>Opções</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
           <Table.Tbody>
             {data.map((it) => (
               <Table.Tr key={it.id}>
-                <Table.Td>{formatDate(it.buyDate)}</Table.Td>
-                <Table.Td>{formatDate(it.billDate)}</Table.Td>
-                <Table.Td>{getDescription(it)}</Table.Td>
-                <Table.Td>{it.category && it.category.label}</Table.Td>
-                <Table.Td>{it.card && it.card.label}</Table.Td>
-                <Table.Td>
-                  {billTypes.find((type) => type.value === it.type)?.label}
-                </Table.Td>
-                <Table.Td>R$ {formatMoney(it.amount)}</Table.Td>
-                <Table.Td>
-                  <Group justify="center">
-                    <Tooltip label="Remover lançamento">
-                      <ActionIcon
-                        color="red"
-                        onClick={deleteBill.bind(null, it)}
-                        loading={loadingDelete === it.id}
-                        variant="transparent"
-                      >
-                        <IconTrash />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
+                <Table.Td className={classes.item}>
+                  <div className={classes.itemBody}>
+                    <div className={classes.bodyContent}>
+                      <span className={classes.dates}>
+                        {formatDate(it.buyDate)} - {formatDate(it.billDate)}
+                      </span>
+                      <Title order={4}>{getDescription(it)}</Title>
+                      {(it.category || it.card || (it.tags && it.tags.length)) && (
+                        <div className={classes.tags}>
+                          {it.category && (
+                            <ItemBadge
+                              icon={IconList}
+                              color="cyan"
+                              label={it.category.label}
+                            />
+                          )}
+                          {it.card && (
+                            <ItemBadge
+                              icon={IconCreditCard}
+                              color="green"
+                              label={it.card.label}
+                            />
+                          )}
+                          {it.tags && it.tags.length > 0 && (
+                            <span>
+                              {it.tags.map((tag: any) => (
+                                <ItemBadge
+                                  key={tag.id}
+                                  icon={IconBookmarkFilled}
+                                  color="orange"
+                                  label={tag.label}
+                                />
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <span className={classes.money}>
+                      <span>R$</span>
+                      <span>{formatMoney(it.amount)}</span>
+                    </span>
+                    <Menu shadow="md" position="bottom-end" id={it.id}>
+                      <Menu.Target>
+                        <ActionIcon variant="transparent" color="gray">
+                          <IconDotsVertical />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconTrash color="red" />}
+                          onClick={deleteBill.bind(null, it)}
+                        >
+                          Remover
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </div>
                 </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
         </Table>
       )}
-      {modalOpen && <BillingModal onClose={toggleModal} />}
+      {opened && <BillingModal onClose={toggleModal} />}
     </div>
   );
 };

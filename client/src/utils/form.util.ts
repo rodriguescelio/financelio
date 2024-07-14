@@ -1,7 +1,7 @@
 export const withCustomEvents = (
   inputProps: any,
   onBlur?: any,
-  onFocus?: any
+  onFocus?: any,
 ) => ({
   ...inputProps,
   onBlur: onBlur
@@ -17,3 +17,9 @@ export const withCustomEvents = (
       }
     : inputProps.onFocus,
 });
+
+export const toSelect = (list: any[], label = "label", value = "id") =>
+  list.map((it) => ({
+    label: it[label],
+    value: it[value],
+  }));

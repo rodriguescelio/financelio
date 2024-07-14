@@ -13,9 +13,9 @@ import { IconDotsVertical, IconPencil, IconPlus, IconTrash } from '@tabler/icons
 import { FC, useEffect, useState } from 'react';
 import http from '../../../services/http.service';
 import { useDisclosure } from '@mantine/hooks';
-import CategoryModal from './CategoryModal';
+import TagModal from './TagModal';
 
-const Category: FC = () => {
+const Tag: FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [edit, setEdit] = useState<any>(null);
 
@@ -26,7 +26,7 @@ const Category: FC = () => {
   }, []);
 
   const findAll = async () => {
-    const [response, error] = await http.get<any[]>('/category/findAll');
+    const [response, error] = await http.get<any[]>('/tag/findAll');
 
     if (error) {
       notifications.show({
@@ -39,8 +39,8 @@ const Category: FC = () => {
     setData(response || []);
   };
 
-  const openEdit = (category: any) => {
-    setEdit(category);
+  const openEdit = (tag: any) => {
+    setEdit(tag);
     toggle();
   };
 
@@ -52,8 +52,8 @@ const Category: FC = () => {
     }
   };
 
-  const execDeleteCategory = async (cardId: string) => {
-    const [, error] = await http.delete(`/category/delete/${cardId}`);
+  const execDelete = async (tagId: string) => {
+    const [, error] = await http.delete(`/tag/delete/${tagId}`);
 
     if (error) {
       notifications.show({
@@ -66,13 +66,13 @@ const Category: FC = () => {
     }
   };
 
-  const deleteCategory = (cardId: string) => {
+  const deleteTag = (tagId: string) => {
     modals.openConfirmModal({
       title: 'Exclusão de registro',
       children: <Text>Deseja mesmo excluir este registro?</Text>,
       labels: { confirm: 'Excluir', cancel: 'Cancelar' },
       confirmProps: { color: 'red' },
-      onConfirm: () => execDeleteCategory(cardId),
+      onConfirm: () => execDelete(tagId),
     });
   };
 
@@ -81,7 +81,7 @@ const Category: FC = () => {
       style={{ padding: '10px', boxSizing: 'border-box' }}
     >
       <Flex justify="space-between">
-        <Title order={2}>Minhas categorias</Title>
+        <Title order={2}>Meus marcadores</Title>
         <ActionIcon onClick={toggle} size="lg">
           <IconPlus />
         </ActionIcon>
@@ -116,7 +116,7 @@ const Category: FC = () => {
                         </Menu.Item>
                         <Menu.Item
                           leftSection={<IconTrash color="red" />}
-                          onClick={deleteCategory.bind(null, it.id)}
+                          onClick={deleteTag.bind(null, it.id)}
                         >
                           Remover
                         </Menu.Item>
@@ -129,9 +129,9 @@ const Category: FC = () => {
           </Table.Tbody>
         </Table>
       )}
-      {opened && <CategoryModal edit={edit} onClose={closeModal} />}
+      {opened && <TagModal edit={edit} onClose={closeModal} />}
     </div>
   );
 };
 
-export default Category;
+export default Tag;

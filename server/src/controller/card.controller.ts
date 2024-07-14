@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { CardDTO } from 'src/model/dto/card.dto';
 import { Card } from 'src/model/entity/card.entity';
 import { CardService } from 'src/service/card.service';
 
@@ -7,7 +8,7 @@ export class CardController {
   constructor(private readonly cardService: CardService) {}
 
   @Get('findAll')
-  async findAll(): Promise<Card[]> {
+  async findAll(): Promise<CardDTO[]> {
     return this.cardService.findAll();
   }
 

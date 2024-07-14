@@ -11,6 +11,7 @@ import { Notifications } from '@mantine/notifications';
 import CreditCard from './views/pages/creditCard/CreditCard';
 import Billing from './views/pages/billing/Billing';
 import Category from './views/pages/category/Category';
+import Tag from './views/pages/tag/Tag';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
       {
         path: '/bankAccount',
         element: <BankAccount />,
+      },
+      {
+        path: '/tag',
+        element: <Tag />,
       },
     ],
   },

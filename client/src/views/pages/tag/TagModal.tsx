@@ -1,4 +1,3 @@
-
 import {
   Button,
   FocusTrap,
@@ -11,12 +10,12 @@ import { notifications } from '@mantine/notifications';
 import { FC, useEffect, useState } from 'react';
 import http from '../../../services/http.service';
 
-interface CategoryModalProps {
+interface TagModalProps {
   edit?: any;
   onClose: () => void;
 }
 
-const CategoryModal: FC<CategoryModalProps> = ({ edit, onClose }) => {
+const TagModal: FC<TagModalProps> = ({ edit, onClose }) => {
   const form = useForm({
     initialValues: {
       id: '',
@@ -40,7 +39,7 @@ const CategoryModal: FC<CategoryModalProps> = ({ edit, onClose }) => {
   const onSubmit = async (formData: typeof form.values) => {
     setLoading(true);
 
-    const [, error] = await http.post<any>('/category/persist', formData);
+    const [, error] = await http.post<any>('/tag/persist', formData);
 
     setLoading(false);
 
@@ -56,7 +55,7 @@ const CategoryModal: FC<CategoryModalProps> = ({ edit, onClose }) => {
   };
 
   return (
-    <Modal opened={true} onClose={onClose} title="Categoria">
+    <Modal opened={true} onClose={onClose} title="Marcador">
       <form onSubmit={form.onSubmit(onSubmit)}>
         <FocusTrap active={true}>
           <TextInput
@@ -77,4 +76,4 @@ const CategoryModal: FC<CategoryModalProps> = ({ edit, onClose }) => {
   );
 };
 
-export default CategoryModal;
+export default TagModal;

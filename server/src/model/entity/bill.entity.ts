@@ -5,6 +5,8 @@ import {
   Column,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -12,6 +14,7 @@ import { BillType } from '../enumerated/billType.enum';
 import { Account } from './account.entity';
 import { Card } from './card.entity';
 import { Category } from './category.entity';
+import { Tag } from './tag.entity';
 
 @Entity({ name: 'bill' })
 export class Bill {
@@ -60,6 +63,20 @@ export class Bill {
 
   @Column({ name: 'generated_via_recurrence' })
   generatedViaRecurrence: boolean = false;
+
+  @Column()
+  paid: boolean = false;
+
+  @Column({ name: 'paid_date' })
+  paidDate: Date;
+
+  @ManyToMany(() => Tag)
+  @JoinTable({
+    name: 'bill_tag',
+    joinColumn: { name: 'bill_id' },
+    inverseJoinColumn: { name: 'tag_id' },
+  })
+  tags: Tag[];
 
   @Column({ name: 'created_at' })
   createdAt: Date = new Date();

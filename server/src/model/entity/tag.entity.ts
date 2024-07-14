@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
 import {
-  AfterLoad,
   BeforeInsert,
   Column,
   Entity,
@@ -10,8 +9,8 @@ import {
 } from 'typeorm';
 import { Account } from './account.entity';
 
-@Entity({ name: 'card' })
-export class Card {
+@Entity({ name: 'tag' })
+export class Tag {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -22,15 +21,6 @@ export class Card {
   @Column()
   label: string;
 
-  @Column({ name: 'amount_limit', type: 'decimal', precision: 15, scale: 2 })
-  amountLimit: number;
-
-  @Column({ name: 'close_day' })
-  closeDay: number;
-
-  @Column({ name: 'pay_day' })
-  payDay: number;
-
   @Column({ name: 'created_at' })
   createdAt: Date = new Date();
 
@@ -39,10 +29,5 @@ export class Card {
     if (!this.id) {
       this.id = randomUUID();
     }
-  }
-
-  @AfterLoad()
-  afterLoad() {
-    this.amountLimit = parseFloat(this.amountLimit as unknown as string);
   }
 }

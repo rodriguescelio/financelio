@@ -2,13 +2,15 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BillDTO } from 'src/model/dto/bill.dto';
 import { Bill } from 'src/model/entity/bill.entity';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { AuthService } from './auth.service';
 import * as moment from 'moment';
 import { BillType } from 'src/model/enumerated/billType.enum';
 import { Category } from 'src/model/entity/category.entity';
 import { Card } from 'src/model/entity/card.entity';
 import { BillDeleteRequestDTO } from 'src/model/dto/billDeleteRequest.dto';
+import { Tag } from 'src/model/entity/tag.entity';
+import { warn } from 'console';
 
 @Injectable()
 export class BillService {
@@ -19,6 +21,8 @@ export class BillService {
     private cardRepository: Repository<Card>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    @InjectRepository(Tag)
+    private tagRepository: Repository<Tag>,
     private readonly authService: AuthService,
   ) {}
 
@@ -47,6 +51,11 @@ export class BillService {
       });
     }
 
+    let tags = [];
+    if (billDTO.tags && billDTO.tags.length) {
+      tags = await this.tagRepository.findBy({ id: In(billDTO.tags) });
+    }
+
     const result = [];
 
     if (billDTO.type === BillType.INSTALLMENTS) {
@@ -69,6 +78,7 @@ export class BillService {
         bill.amount = amount;
         bill.installments = billDTO.installments;
         bill.installmentIndex = i + 1;
+        bill.tags = tags;
 
         if (i !== 0) {
           bill.rootBill = result[0];
@@ -91,6 +101,7 @@ export class BillService {
       bill.billDate = payDate.toDate();
       bill.description = billDTO.description;
       bill.amount = billDTO.amount;
+      bill.tags = tags;
 
       await this.billRepository.save(bill);
 
@@ -105,12 +116,17 @@ export class BillService {
       relations: {
         card: true,
         category: true,
+        tags: true,
       },
       where: {
         account: {
           id: this.authService.sessionAccount.id,
         },
         generatedViaRecurrence: false,
+      },
+      order: {
+        buyDate: 'ASC',
+        installmentIndex: 'ASC',
       },
     });
   }

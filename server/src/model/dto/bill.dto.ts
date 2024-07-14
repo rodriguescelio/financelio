@@ -11,4 +11,5 @@ export class BillDTO {
   amount: number;
   installments: number;
   isInstallmentAmount: boolean;
+  tags: any[];
 }

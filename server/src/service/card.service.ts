@@ -1,28 +1,50 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CardDTO } from 'src/model/dto/card.dto';
+import { Bill } from 'src/model/entity/bill.entity';
 import { Card } from 'src/model/entity/card.entity';
 import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
 
 @Injectable()
 export class CardService {
-
   constructor(
     @InjectRepository(Card)
     private cardRepository: Repository<Card>,
-    private readonly authService: AuthService
+    @InjectRepository(Bill)
+    private billRepository: Repository<Bill>,
+    private readonly authService: AuthService,
   ) {}
 
-  async findAll(): Promise<Card[]> {
-    return await this.cardRepository.findBy({
-      account: {
-        id: this.authService.sessionAccount.id
-      },
-    });
+  async findAll(): Promise<CardDTO[]> {
+    const bills = await this.billRepository
+      .createQueryBuilder('bill')
+      .select('bill.amount', 'amount')
+      .addSelect('bill.card.id', 'card')
+      .where('bill.account.id = :id', {
+        id: this.authService.sessionAccount.id,
+      })
+      .andWhere('bill.type != :type', { type: 'recurrence' })
+      .getRawMany();
+
+    return (
+      await this.cardRepository.findBy({
+        account: {
+          id: this.authService.sessionAccount.id,
+        },
+      })
+    ).map((card) => ({
+      ...card,
+      amountUsed: bills
+        .filter((it) => it.card === card.id)
+        .reduce((total, it) => total + parseFloat(it.amount), 0),
+    }));
   }
 
   async persist(card: Card): Promise<Card> {
-    const cardDB = card.id ? await this.cardRepository.findOneBy({ id: card.id }) : new Card();
+    const cardDB = card.id
+      ? await this.cardRepository.findOneBy({ id: card.id })
+      : new Card();
 
     cardDB.label = card.label;
     cardDB.amountLimit = card.amountLimit;
