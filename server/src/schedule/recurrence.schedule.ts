@@ -52,7 +52,7 @@ export class RecurrenceSchedule {
     return null;
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_6_HOURS)
   async run() {
     const recurrences = await this.billRepository.find({
       where: { type: BillType.RECURRENCE, active: true },
