@@ -1,0 +1,17 @@
+CREATE TABLE receipt (
+  id UUID NOT NULL,
+  account_id UUID NOT NULL,
+  card_id UUID NOT NULL,
+  bank_account_id UUID,
+  reference CHARACTER VARYING(6) NOT NULL,
+  total_amount DECIMAL(15, 2) NOT NULL,
+  paid BOOLEAN NOT NULL DEFAULT FALSE,
+  paid_amount DECIMAL(15, 2),
+  payment_date TIMESTAMP WITHOUT TIME ZONE,
+  debited BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT receipt_pk PRIMARY KEY (id),
+  CONSTRAINT receipt_1_fk FOREIGN KEY (account_id) REFERENCES account (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT receipt_2_fk FOREIGN KEY (card_id) REFERENCES card (id) ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT receipt_3_fk FOREIGN KEY (bank_account_id) REFERENCES bank_account (id) ON UPDATE CASCADE ON DELETE SET NULL
+);
+

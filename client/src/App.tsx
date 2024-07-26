@@ -17,6 +17,7 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
 import './App.scss';
+import Invoice from './views/pages/creditCard/invoice/Invoice';
 
 const router = createBrowserRouter([
   {
@@ -37,7 +38,16 @@ const router = createBrowserRouter([
       },
       {
         path: '/creditCard',
-        element: <CreditCard />,
+        children: [
+          {
+            element: <CreditCard />,
+            index: true,
+          },
+          {
+            path: ':cardId',
+            element: <Invoice />,
+          },
+        ],
       },
       {
         path: '/bankAccount',

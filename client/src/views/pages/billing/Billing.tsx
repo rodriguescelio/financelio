@@ -20,6 +20,7 @@ import { formatDate, formatMoney } from '../../../utils/mask.util';
 import BillingModal from './BillingModal';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './Billing.module.css';
+import { getBillDescription } from '../../../utils/bill.util';
 
 const MODAL_ID = 'modalInstallment';
 
@@ -149,16 +150,6 @@ const Billing: FC = () => {
     }
   };
 
-  const getDescription = (bill: any) => {
-    let description = bill.description;
-
-    if (bill.type === BillType.INSTALLMENTS) {
-      description += ` (${bill.installmentIndex}/${bill.installments})`;
-    }
-
-    return description;
-  };
-
   return (
     <div
       style={{ padding: '10px', boxSizing: 'border-box' }}
@@ -188,7 +179,7 @@ const Billing: FC = () => {
                       <span className={classes.dates}>
                         {formatDate(it.buyDate)} - {formatDate(it.billDate)}
                       </span>
-                      <Title order={4}>{getDescription(it)}</Title>
+                      <Title order={4}>{getBillDescription(it)}</Title>
                       {(it.category || it.card || (it.tags && it.tags.length)) && (
                         <div className={classes.tags}>
                           {it.category && (

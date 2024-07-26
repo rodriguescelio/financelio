@@ -4,20 +4,14 @@ import {
   BeforeInsert,
   Column,
   Entity,
-  JoinColumn,
-  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Account } from './account.entity';
+import { WithAccount } from './withAccount.entity';
 
 @Entity({ name: 'card' })
-export class Card {
+export class Card extends WithAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
-  account: Account;
 
   @Column()
   label: string;

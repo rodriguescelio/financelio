@@ -11,19 +11,15 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { BillType } from '../enumerated/billType.enum';
-import { Account } from './account.entity';
 import { Card } from './card.entity';
 import { Category } from './category.entity';
 import { Tag } from './tag.entity';
+import { WithAccount } from './withAccount.entity';
 
 @Entity({ name: 'bill' })
-export class Bill {
+export class Bill extends WithAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
-  account: Account;
 
   @ManyToOne(() => Category)
   @JoinColumn({ name: 'category_id' })

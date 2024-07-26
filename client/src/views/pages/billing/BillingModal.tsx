@@ -160,8 +160,6 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
     }
   };
 
-  const renderTag = () => {};
-
   return (
     <Modal opened={true} onClose={onClose} title="Lançamento">
       <form onSubmit={form.onSubmit(onSubmit)}>

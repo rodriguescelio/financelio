@@ -5,6 +5,7 @@ import {
   Checkbox,
   CloseButton,
   Flex,
+  FocusTrap,
   Loader,
   PasswordInput,
   SegmentedControl,
@@ -250,40 +251,43 @@ const Login: FC = () => {
               {screenState.formMessage}
             </Alert>
           )}
-          {form.values.mode === ScreenMode.SIGNUP && (
+          <FocusTrap active={true}>
+            {form.values.mode === ScreenMode.SIGNUP && (
+              <TextInput
+                mt="md"
+                label="Nome"
+                placeholder="Insira seu nome"
+                withAsterisk={true}
+                {...form.getInputProps('name')}
+              />
+            )}
             <TextInput
               mt="md"
-              label="Nome"
-              placeholder="Insira seu nome"
+              label="Email"
+              placeholder="Insira seu email"
               withAsterisk={true}
-              {...form.getInputProps('name')}
+              rightSection={INPUT_ICON[screenState.emailState]}
+              styles={getInputStyle.bind(null, screenState.emailState)}
+              data-autofocus={true}
+              {...withCustomEvents(
+                form.getInputProps('email'),
+                onBlurEmail,
+                onFocusEmail
+              )}
             />
-          )}
-          <TextInput
-            mt="md"
-            label="Email"
-            placeholder="Insira seu email"
-            withAsterisk={true}
-            rightSection={INPUT_ICON[screenState.emailState]}
-            styles={getInputStyle.bind(null, screenState.emailState)}
-            {...withCustomEvents(
-              form.getInputProps('email'),
-              onBlurEmail,
-              onFocusEmail
-            )}
-          />
-          <PasswordInput
-            mt="md"
-            label="Senha"
-            placeholder="Insira sua senha"
-            withAsterisk={true}
-            {...form.getInputProps('password')}
-          />
-          <Checkbox
-            label="Mantenha-me conectado"
-            pt="md"
-            {...form.getInputProps('keepConnected')}
-          />
+            <PasswordInput
+              mt="md"
+              label="Senha"
+              placeholder="Insira sua senha"
+              withAsterisk={true}
+              {...form.getInputProps('password')}
+            />
+            <Checkbox
+              label="Mantenha-me conectado"
+              pt="md"
+              {...form.getInputProps('keepConnected')}
+            />
+          </FocusTrap>
           <Button
             fullWidth={true}
             mt="md"

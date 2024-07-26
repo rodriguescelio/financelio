@@ -12,12 +12,15 @@ import {
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconDotsVertical, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconDotsVertical, IconFileInvoice, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
 import http from '../../../services/http.service';
 import { formatMoney } from '../../../utils/mask.util';
 import CreditCardModal from './CreditCardModal';
 import { useDisclosure } from '@mantine/hooks';
+import { Link } from 'react-router-dom';
+import classes from './CreditCard.module.css';
+import { invoiceStatus } from '../../../models/enum/invoiceStatus.enum';
 
 const CreditCard: FC = () => {
   const [opened, { toggle }] = useDisclosure();
@@ -107,6 +110,13 @@ const CreditCard: FC = () => {
                     </Menu.Target>
                     <Menu.Dropdown>
                       <Menu.Item
+                        component={Link}
+                        to={`/creditCard/${it.id}`}
+                        leftSection={<IconFileInvoice color="cyan" />}
+                      >
+                        Visualizar fatura
+                      </Menu.Item>
+                      <Menu.Item
                         leftSection={<IconPencil color="orange" />}
                         onClick={openEdit.bind(null, it)}
                       >
@@ -122,7 +132,7 @@ const CreditCard: FC = () => {
                   </Menu>
                 </Group>
               </Card.Section>
-              <Text mt="sm" c="dimmed" size="sm">
+              <div className={classes.infos}>
                 <Group justify="space-between">
                   <Flex direction="column">
                     <Text c="gray.5">Utilizado</Text>
@@ -137,7 +147,8 @@ const CreditCard: FC = () => {
                 <Text c="gray.5" mt={20}>Limite total: R$ {formatMoney(it.amountLimit)}</Text>
                 <Text c="gray.5">Dia do fechamento: {it.closeDay.toString().padStart(2, '0')}</Text>
                 <Text c="gray.5">Dia do vencimento: {it.payDay.toString().padStart(2, '0')}</Text>
-              </Text>
+                <Text c="gray.5">Situação da fatura: {invoiceStatus[it.status]}</Text>
+              </div>
             </Card>
           </Grid.Col>
         ))}

@@ -26,7 +26,7 @@ export class BillService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(billDTO: BillDTO): Promise<Bill[]> {
+  async create(billDTO: Partial<BillDTO>): Promise<Bill[]> {
     const date = moment(billDTO.date);
     const payDate = moment(billDTO.payDate, 'DD/MM/YYYY');
 
@@ -40,6 +40,10 @@ export class BillService {
         },
         id: billDTO.card,
       });
+
+      if (card) {
+        payDate.date(card.closeDay);
+      }
     }
 
     if (billDTO.category) {

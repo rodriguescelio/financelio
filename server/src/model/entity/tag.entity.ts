@@ -1,22 +1,11 @@
 import { randomUUID } from 'crypto';
-import {
-  BeforeInsert,
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { Account } from './account.entity';
+import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { WithAccount } from './withAccount.entity';
 
 @Entity({ name: 'tag' })
-export class Tag {
+export class Tag extends WithAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(() => Account)
-  @JoinColumn({ name: 'account_id' })
-  account: Account;
 
   @Column()
   label: string;

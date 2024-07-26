@@ -144,7 +144,7 @@ const BankAccount: FC = () => {
       </Flex>
       <Grid mt={30}>
         {data.map((it) => (
-          <Grid.Col span={{ base: 12, md: 6, lg: 4 }}>
+          <Grid.Col span={{ base: 12, md: 6, lg: 4 }} key={it.id}>
             <Card withBorder={true} shadow="sm" radius="md">
               <Card.Section withBorder={true} inheritPadding={true} py="xs" pr={5}>
                 <Group justify="space-between">
@@ -183,12 +183,10 @@ const BankAccount: FC = () => {
                   </Menu>
                 </Group>
               </Card.Section>
-              <Text mt="sm" c="dimmed" size="sm">
-                <Group justify="space-between">
-                  <Text c="white">Saldo atual</Text>
-                  <Text c="teal">R$ {formatMoney(it.amount)}</Text>
-                </Group>
-              </Text>
+              <Group justify="space-between" mt="sm">
+                <Text c="white" size="sm">Saldo atual</Text>
+                <Text c="teal" size="sm">R$ {formatMoney(it.amount)}</Text>
+              </Group>
             </Card>
           </Grid.Col>
         ))}

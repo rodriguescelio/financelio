@@ -14,13 +14,14 @@ import { readdirSync } from 'fs';
 import { join } from 'path';
 import { AuthMiddleware } from './middleware/auth.middleware';
 
-const load = (path: string): Type<any>[] => {
+const load = (path: string, filter?: string[]): Type<any>[] => {
   let result = [];
 
   try {
     const fullpath = join(__dirname, path);
     result = readdirSync(fullpath)
       .filter((it) => it.endsWith('.js') && !it.endsWith('.d.js'))
+      .filter((it) => !filter || !filter.includes(it))
       .map((it) => require(join(fullpath, it)))
       .map((it) => Object.values(it)[0] as Type<any>);
   } catch (e) {}
@@ -28,7 +29,7 @@ const load = (path: string): Type<any>[] => {
   return result;
 };
 
-const entities = load('./model/entity');
+const entities = load('./model/entity', ['withAccount.entity.js']);
 
 @Module({
   controllers: load('./controller'),
@@ -62,7 +63,7 @@ class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .exclude({ path: '/auth/(.*)', method: RequestMethod.POST }) 
+      .exclude({ path: '/auth/(.*)', method: RequestMethod.POST })
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

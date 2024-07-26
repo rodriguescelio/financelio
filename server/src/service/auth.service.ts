@@ -47,18 +47,26 @@ export class AuthService {
   }
 
   async signup(signupRequest: Account): Promise<TokenResponseDTO> {
-    if (!await this.checkEmail({ email: signupRequest.email.toLowerCase() })) {
+    if (
+      !(await this.checkEmail({ email: signupRequest.email.toLowerCase() }))
+    ) {
       throw new HttpException('Email já em uso.', HttpStatus.FORBIDDEN);
     }
 
     const account = new Account();
     account.name = signupRequest.name;
     account.email = signupRequest.email;
-    account.password = bcrypt.hashSync(signupRequest.password, parseInt(process.env.BCRYPT_SALT));
+    account.password = bcrypt.hashSync(
+      signupRequest.password,
+      parseInt(process.env.BCRYPT_SALT),
+    );
 
     await this.accountRepository.save(account);
 
-    return new TokenResponseDTO(account, this.jwtService.sign({ id: account.id }));
+    return new TokenResponseDTO(
+      account,
+      this.jwtService.sign({ id: account.id }),
+    );
   }
 
   async validate(token: string): Promise<boolean> {

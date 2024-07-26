@@ -6,23 +6,24 @@ import { AuthService } from './auth.service';
 
 @Injectable()
 export class CategoryService {
-
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {}
 
   async findAll(): Promise<Category[]> {
     return await this.categoryRepository.findBy({
       account: {
-        id: this.authService.sessionAccount.id
+        id: this.authService.sessionAccount.id,
       },
     });
   }
 
   async persist(category: Category): Promise<Category> {
-    const categoryDB = category.id ? await this.categoryRepository.findOneBy({ id: category.id }) : new Category();
+    const categoryDB = category.id
+      ? await this.categoryRepository.findOneBy({ id: category.id })
+      : new Category();
 
     categoryDB.label = category.label;
 

@@ -9,20 +9,19 @@ import { AuthService } from './auth.service';
 
 @Injectable()
 export class BankAccountService {
-
   constructor(
     @InjectRepository(BankAccount)
     private bankAccountRepository: Repository<BankAccount>,
     @InjectRepository(BankAccountEntry)
     private bankAccountEntryRepository: Repository<BankAccountEntry>,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {}
 
   async findAll(): Promise<BankAccountDTO[]> {
     const bankAccounts = await this.bankAccountRepository.find({
       where: {
         account: {
-          id: this.authService.sessionAccount.id
+          id: this.authService.sessionAccount.id,
         },
       },
       relations: {
@@ -31,7 +30,7 @@ export class BankAccountService {
     });
 
     return await Promise.all(
-        bankAccounts.map(async it => {
+      bankAccounts.map(async (it) => {
         const dto = new BankAccountDTO(it);
 
         const lastValueChange = await this.bankAccountEntryRepository.findOne({
@@ -40,8 +39,8 @@ export class BankAccountService {
             type: EntryType.VALUE,
           },
           order: {
-            createdAt: 'DESC'
-          }
+            createdAt: 'DESC',
+          },
         });
 
         const whereChanges: any = {
@@ -54,19 +53,25 @@ export class BankAccountService {
           whereChanges.createdAt = MoreThan(lastValueChange.createdAt);
         }
 
-        dto.amount = (await this.bankAccountEntryRepository.findBy(whereChanges))
-          .reduce(
-            (total, it) => it.type === EntryType.CREDIT ? (total + it.amount) : (total - it.amount),
-            dto.amount
-          );
+        dto.amount = (
+          await this.bankAccountEntryRepository.findBy(whereChanges)
+        ).reduce(
+          (total, it) =>
+            it.type === EntryType.CREDIT
+              ? total + it.amount
+              : total - it.amount,
+          dto.amount,
+        );
 
         return dto;
-      })
+      }),
     );
   }
 
   async persist(bankAccount: BankAccount): Promise<BankAccount> {
-    const bankAccountDB = bankAccount.id ? await this.bankAccountRepository.findOneBy({ id: bankAccount.id }) : new BankAccount();
+    const bankAccountDB = bankAccount.id
+      ? await this.bankAccountRepository.findOneBy({ id: bankAccount.id })
+      : new BankAccount();
 
     bankAccountDB.label = bankAccount.label;
 
@@ -79,7 +84,9 @@ export class BankAccountService {
     return bankAccountDB;
   }
 
-  async persistEntry(bankAccountEntry: BankAccountEntry): Promise<BankAccountEntry> {
+  async persistEntry(
+    bankAccountEntry: BankAccountEntry,
+  ): Promise<BankAccountEntry> {
     const bankAccount = await this.bankAccountRepository.findOneBy({
       id: bankAccountEntry.bankAccount.id,
       account: {
@@ -97,7 +104,8 @@ export class BankAccountService {
     entry.type = bankAccountEntry.type;
     entry.amount = bankAccountEntry.amount;
     entry.description = bankAccountEntry.description;
-  
+    entry.receipt = bankAccountEntry.receipt;
+
     await this.bankAccountEntryRepository.save(entry);
 
     return entry;

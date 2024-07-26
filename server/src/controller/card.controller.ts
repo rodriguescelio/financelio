@@ -1,5 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { CardDTO } from 'src/model/dto/card.dto';
+import { InvoiceDTO } from 'src/model/dto/invoice.dto';
+import { InvoicePaymentDTO } from 'src/model/dto/invoicePayment.dto';
+import { ManualAmountDTO } from 'src/model/dto/manualAmount.dto';
 import { Card } from 'src/model/entity/card.entity';
 import { CardService } from 'src/service/card.service';
 
@@ -18,7 +21,36 @@ export class CardController {
   }
 
   @Delete('delete/:id')
-  delete(@Param() params): Promise<void> {
-    return this.cardService.delete(params.id);
+  delete(@Param('id') id: string): Promise<void> {
+    return this.cardService.delete(id);
+  }
+
+  @Get(':id/invoice/:ref')
+  getInvoice(@Param() params: any): Promise<InvoiceDTO> {
+    return this.cardService.getInvoice(params.id, params.ref);
+  }
+
+  @Post(':id/manualAmount')
+  persistManualAmount(
+    @Param('id') id: string,
+    @Body() manualAmount: ManualAmountDTO,
+  ): Promise<InvoiceDTO> {
+    return this.cardService.persistManualAmount(id, manualAmount);
+  }
+
+  @Post(':id/pay')
+  persistPayment(
+    @Param('id') id: string,
+    @Body() data: InvoicePaymentDTO,
+  ): Promise<InvoiceDTO> {
+    return this.cardService.persistPayment(id, data);
+  }
+
+  @Post(':cardId/reset/:receiptId')
+  resetPayment(
+    @Param('cardId') cardId: string,
+    @Param('receiptId') receiptId: string,
+  ): Promise<void> {
+    return this.cardService.resetPayment(cardId, receiptId);
   }
 }

@@ -1,17 +1,29 @@
 import { randomUUID } from 'crypto';
-import { AfterLoad, BeforeInsert, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  AfterLoad,
+  BeforeInsert,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { EntryType } from '../enumerated/entryType.enum';
 import { BankAccount } from './bankAccount.entity';
+import { Receipt } from './receipt.entity';
 
 @Entity({ name: 'bank_account_entry' })
 export class BankAccountEntry {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ManyToOne(() => BankAccount, (bankAccount) => bankAccount.entries)
   @JoinColumn({ name: 'bank_account_id' })
   bankAccount: BankAccount;
+
+  @ManyToOne(() => Receipt)
+  @JoinColumn({ name: 'receipt_id' })
+  receipt: Receipt;
 
   @Column()
   description: string;

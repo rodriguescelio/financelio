@@ -1,0 +1,5 @@
+.infos {
+  --text-fz: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+  margin-top: 10px;
+}
