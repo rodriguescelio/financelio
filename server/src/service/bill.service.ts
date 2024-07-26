@@ -10,7 +10,9 @@ import { Category } from 'src/model/entity/category.entity';
 import { Card } from 'src/model/entity/card.entity';
 import { BillDeleteRequestDTO } from 'src/model/dto/billDeleteRequest.dto';
 import { Tag } from 'src/model/entity/tag.entity';
-import { warn } from 'console';
+import { EntryType } from 'src/model/enumerated/entryType.enum';
+import { BankAccountService } from './bankAccount.service';
+import { BankAccountEntryDTO } from 'src/model/dto/bankAccountEntry.dto';
 
 @Injectable()
 export class BillService {
@@ -24,11 +26,12 @@ export class BillService {
     @InjectRepository(Tag)
     private tagRepository: Repository<Tag>,
     private readonly authService: AuthService,
+    private readonly bankAccountService: BankAccountService,
   ) {}
 
   async create(billDTO: Partial<BillDTO>): Promise<Bill[]> {
     const date = moment(billDTO.date);
-    const payDate = moment(billDTO.payDate, 'DD/MM/YYYY');
+    const payDate = moment(billDTO.payDate);
 
     let card: Card = null;
     let category = null;
@@ -67,6 +70,7 @@ export class BillService {
         ? billDTO.amount
         : billDTO.amount / billDTO.installments;
 
+      const currentDate = moment();
       const installmentDate = payDate.clone();
 
       for (let i = 0; i < billDTO.installments; i++) {
@@ -83,6 +87,11 @@ export class BillService {
         bill.installments = billDTO.installments;
         bill.installmentIndex = i + 1;
         bill.tags = tags;
+
+        if (billDTO.markPreviousPaid && installmentDate.isBefore(currentDate)) {
+          bill.paid = true;
+          bill.paidDate = installmentDate.toDate();
+        }
 
         if (i !== 0) {
           bill.rootBill = result[0];
@@ -107,7 +116,25 @@ export class BillService {
       bill.amount = billDTO.amount;
       bill.tags = tags;
 
+      if (billDTO.paid) {
+        bill.paid = true;
+        bill.paidDate = payDate.toDate();
+      }
+
       await this.billRepository.save(bill);
+
+      if (billDTO.paid && billDTO.bankAccount && billDTO.debit) {
+        const entry = new BankAccountEntryDTO();
+
+        entry.bankAccount = { id: billDTO.bankAccount };
+        entry.type = EntryType.DEBIT;
+        entry.amount = bill.amount;
+        entry.description = `Lançamento de cobrança já paga com débito em conta${
+          bill.description ? ` - ${bill.description}` : ''
+        }`;
+
+        await this.bankAccountService.persistEntry(entry);
+      }
 
       result.push(bill);
     }
@@ -126,7 +153,6 @@ export class BillService {
         account: {
           id: this.authService.sessionAccount.id,
         },
-        generatedViaRecurrence: false,
       },
       order: {
         buyDate: 'ASC',

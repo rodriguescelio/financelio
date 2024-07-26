@@ -12,4 +12,8 @@ export class BillDTO {
   installments: number;
   isInstallmentAmount: boolean;
   tags: any[];
+  paid: boolean;
+  bankAccount: string;
+  debit: boolean;
+  markPreviousPaid: boolean;
 }

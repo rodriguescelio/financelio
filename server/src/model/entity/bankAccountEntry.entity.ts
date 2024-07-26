@@ -6,10 +6,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EntryType } from '../enumerated/entryType.enum';
 import { BankAccount } from './bankAccount.entity';
+import { Bill } from './bill.entity';
 import { Receipt } from './receipt.entity';
 
 @Entity({ name: 'bank_account_entry' })
@@ -21,9 +23,13 @@ export class BankAccountEntry {
   @JoinColumn({ name: 'bank_account_id' })
   bankAccount: BankAccount;
 
-  @ManyToOne(() => Receipt)
+  @OneToOne(() => Receipt)
   @JoinColumn({ name: 'receipt_id' })
   receipt: Receipt;
+
+  @OneToOne(() => Bill)
+  @JoinColumn({ name: 'bill_id' })
+  bill: Bill;
 
   @Column()
   description: string;

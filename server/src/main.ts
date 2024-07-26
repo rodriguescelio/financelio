@@ -8,6 +8,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { readdirSync } from 'fs';
@@ -33,9 +34,10 @@ const entities = load('./model/entity', ['withAccount.entity.js']);
 
 @Module({
   controllers: load('./controller'),
-  providers: load('./service'),
+  providers: [...load('./service'), ...load('./schedule')],
   imports: [
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'client'),
       exclude: ['/api*'],

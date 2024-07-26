@@ -15,6 +15,7 @@ import Tag from './views/pages/tag/Tag';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/dates/styles.css';
 
 import './App.scss';
 import Invoice from './views/pages/creditCard/invoice/Invoice';

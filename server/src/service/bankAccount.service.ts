@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BankAccountDTO } from 'src/model/dto/bankAccount.dto';
+import { BankAccountEntryDTO } from 'src/model/dto/bankAccountEntry.dto';
 import { BankAccount } from 'src/model/entity/bankAccount.entity';
 import { BankAccountEntry } from 'src/model/entity/bankAccountEntry.entity';
 import { EntryType } from 'src/model/enumerated/entryType.enum';
@@ -84,11 +85,9 @@ export class BankAccountService {
     return bankAccountDB;
   }
 
-  async persistEntry(
-    bankAccountEntry: BankAccountEntry,
-  ): Promise<BankAccountEntry> {
+  async persistEntry(entryDTO: BankAccountEntryDTO): Promise<BankAccountEntry> {
     const bankAccount = await this.bankAccountRepository.findOneBy({
-      id: bankAccountEntry.bankAccount.id,
+      id: entryDTO.bankAccount.id,
       account: {
         id: this.authService.sessionAccount.id,
       },
@@ -101,10 +100,11 @@ export class BankAccountService {
     const entry = new BankAccountEntry();
 
     entry.bankAccount = bankAccount;
-    entry.type = bankAccountEntry.type;
-    entry.amount = bankAccountEntry.amount;
-    entry.description = bankAccountEntry.description;
-    entry.receipt = bankAccountEntry.receipt;
+    entry.type = entryDTO.type;
+    entry.amount = entryDTO.amount;
+    entry.description = entryDTO.description;
+    entry.receipt = entryDTO.receipt;
+    entry.bill = entryDTO.bill;
 
     await this.bankAccountEntryRepository.save(entry);
 

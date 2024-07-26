@@ -11,7 +11,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
-import { useForm } from '@mantine/form';
+import { isNotEmpty, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import moment from 'moment';
 import { FC, useEffect, useState } from 'react';
@@ -36,30 +36,87 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
       description: '',
       amount: 0,
       installments: 0,
-      payDate: '',
+      payDateSelect: '',
+      payDate: new Date(),
       isInstallmentAmount: false,
+      paid: false,
+      bankAccount: '',
+      debit: true,
+      markPreviousPaid: true,
+    },
+    validate: {
+      amount: value => value > 0 ? null : 'Valor deve ser maior que R$ 0',
+      description: isNotEmpty('Informe uma descrição para este lançamento'),
+      date: isNotEmpty('Informe a data da compra'),
+      // TODO data de pagamento realmente deveria ser obrigatório?
+      payDate: isNotEmpty('Informe a data do pagamento'),
+      installments: (value, values) => values.type === BillType.INSTALLMENTS && value < 1 ? 'Informe o número de parcelas' : null,
     },
   });
 
   const [categories, setCategories] = useState<any[]>([]);
   const [cards, setCards] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [payDates, setPayDates] = useState<any[]>([]);
 
   const [loadingPersist, setLoadingPersist] = useState(false);
+  const [isFirstDateBefore, setIsFirstDateBefore] = useState(false);
 
   useEffect(() => {
     loadCards();
     loadCategories();
     loadTags();
+    loadBankAccounts();
   }, []);
 
   useEffect(
     () => {
-      calculatePayDates();
+      if (form.values.card) {
+        calculatePayDates();
+      } else {
+        form.setValues({ payDate: new Date() });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [form.values.card]
+  );
+
+  useEffect(
+    () => {
+      if (!form.values.paid) {
+        form.values.debit = true;
+        form.values.bankAccount = '';
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.paid]
+  );
+
+  useEffect(
+    () => {
+      if (form.values.payDateSelect) {
+        form.setValues({ payDate: moment(form.values.payDateSelect, BR_DATE_FORMAT).toDate() });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.payDateSelect]
+  );
+
+  useEffect(
+    () => {
+      let result = false;
+
+      if (form.values.payDate && form.values.date && form.values.type === BillType.INSTALLMENTS) {
+        const payDate = moment(form.values.payDate);
+        const date = moment(form.values.date);
+        result = payDate.month() !== date.month() && payDate.isBefore(date);
+      }
+
+      setIsFirstDateBefore(result);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values.payDate]
   );
 
   const loadCards = async () => {
@@ -104,6 +161,20 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
     setTags(response || []);
   };
 
+  const loadBankAccounts = async () => {
+    const [response, error] = await http.get<any[]>('/bankAccount/findAll');
+
+    if (error) {
+      notifications.show({
+        color: 'red',
+        title: 'Erro',
+        message: 'Ocorreu um erro inesperado ao carregar a página.',
+      });
+    }
+
+    setBankAccounts(response || []);
+  };
+
   const calculatePayDates = () => {
     if (form.values.date) {
       const selectedDate = moment(form.values.date);
@@ -121,7 +192,7 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
         }
       }
 
-      form.values.payDate = selectedDate
+      form.values.payDateSelect = selectedDate
         .clone()
         .month(initialMonth + 1)
         .format(BR_DATE_FORMAT);
@@ -159,6 +230,10 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
       onClose();
     }
   };
+
+  const labelPayDate = form.values.type === BillType.SINGLE
+                ? 'Data do pagamento'
+                : 'Data do primeiro pagamento';
 
   return (
     <Modal opened={true} onClose={onClose} title="Lançamento">
@@ -226,19 +301,65 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
             data={toSelect(cards)}
             {...form.getInputProps('card')}
           />
-          <Select
-            mb="md"
-            label={
-              form.values.type === BillType.SINGLE
-                ? 'Data do pagamento'
-                : 'Data do primeiro pagamento'
-            }
-            searchable={true}
-            clearable={true}
-            data={payDates}
-            withAsterisk={true}
-            {...form.getInputProps('payDate')}
-          />
+          {form.values.card ? (
+            <Select
+              mb="md"
+              label={labelPayDate}
+              searchable={true}
+              clearable={true}
+              data={payDates}
+              withAsterisk={true}
+              {...form.getInputProps('payDateSelect')}
+            />
+          ) : (
+            <>
+              <DateInput
+                label={labelPayDate}
+                mb="md"
+                firstDayOfWeek={0}
+                valueFormat="DD/MM/YYYY"
+                withAsterisk={true}
+                {...form.getInputProps('payDate')}
+              />
+              {isFirstDateBefore && (
+                <Checkbox
+                  mb="md"
+                  defaultChecked={true}
+                  label="Marcar parcelas anteriores à data atual como pagas"
+                  {...form.getInputProps('markPreviousPaid')}
+                />
+              )}
+            </>
+          )}
+          {form.values.type === BillType.SINGLE && !form.values.card && (
+            <>
+                <Checkbox
+                  mb="md"
+                  label="Este lançamento já foi pago"
+                  {...form.getInputProps('paid')}
+                />
+                {form.values.paid && (
+                  <>
+                    <Select
+                      mb="md"
+                      label="Conta"
+                      searchable={true}
+                      clearable={true}
+                      data={toSelect(bankAccounts)}
+                      {...form.getInputProps('bankAccount')}
+                    />
+                    {form.values.bankAccount && (
+                      <Checkbox
+                        mb="md"
+                        defaultChecked={true}
+                        label="Debitar valor da conta informada"
+                        {...form.getInputProps('debit')}
+                      />
+                    )}
+                  </>
+                )}
+            </>
+          )}
         </FocusTrap>
         <Group justify="flex-end" mt="md">
           <Button type="submit" loading={loadingPersist}>

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LoginRequestDTO } from 'src/model/dto/loginRequest.dto';
@@ -7,6 +13,7 @@ import { Account } from 'src/model/entity/account.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CheckEmailRequestDTO } from 'src/model/dto/checkEmailRequest.dto';
+import { CategoryService } from './category.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +23,8 @@ export class AuthService {
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => CategoryService))
+    private categoryService: CategoryService,
   ) {}
 
   async login(loginRequest: LoginRequestDTO): Promise<TokenResponseDTO> {
@@ -53,7 +62,7 @@ export class AuthService {
       throw new HttpException('Email já em uso.', HttpStatus.FORBIDDEN);
     }
 
-    const account = new Account();
+    let account = new Account();
     account.name = signupRequest.name;
     account.email = signupRequest.email;
     account.password = bcrypt.hashSync(
@@ -61,7 +70,9 @@ export class AuthService {
       parseInt(process.env.BCRYPT_SALT),
     );
 
-    await this.accountRepository.save(account);
+    account = await this.accountRepository.save(account);
+
+    await this.categoryService.createDefaultCategories(account);
 
     return new TokenResponseDTO(
       account,
