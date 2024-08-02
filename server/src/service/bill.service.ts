@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BillDTO } from 'src/model/dto/bill.dto';
 import { Bill } from 'src/model/entity/bill.entity';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { AuthService } from './auth.service';
 import * as moment from 'moment';
 import { BillType } from 'src/model/enumerated/billType.enum';
@@ -13,6 +13,8 @@ import { Tag } from 'src/model/entity/tag.entity';
 import { EntryType } from 'src/model/enumerated/entryType.enum';
 import { BankAccountService } from './bankAccount.service';
 import { BankAccountEntryDTO } from 'src/model/dto/bankAccountEntry.dto';
+import { PLAIN_DATE_FORMAT } from 'src/util/mask.util';
+import { BillingFilterType } from 'src/model/enumerated/billingFilterType.enum';
 
 @Injectable()
 export class BillService {
@@ -142,20 +144,63 @@ export class BillService {
     return result;
   }
 
-  async findAll(): Promise<Bill[]> {
+  async findAll(query: any): Promise<Bill[]> {
+    const period = Between(
+      moment(query.start, PLAIN_DATE_FORMAT).toDate(),
+      moment(query.end, PLAIN_DATE_FORMAT).toDate(),
+    );
+
+    const where: any = {
+      account: {
+        id: this.authService.sessionAccount.id,
+      },
+    };
+
+    let field = '';
+
+    switch (query.filterType) {
+      case BillingFilterType.BUY:
+        where.buyDate = period;
+        field = 'buyDate';
+        break;
+      case BillingFilterType.BILLING:
+        where.billDate = period;
+        field = 'billDate';
+        break;
+    }
+
+    if (query.cards && query.cards.length) {
+      where.card = { id: In(query.cards) };
+    }
+
+    if (query.categories && query.categories.length) {
+      where.category = { id: In(query.categories) };
+    }
+
+    if (query.tags && query.tags.length) {
+      where.tags = { id: In(query.tags) };
+    }
+
+    if (query.unpaid === 'true' && query.paid === 'false') {
+      where.paid = false;
+    } else if (query.unpaid === 'false' && query.paid === 'true') {
+      where.paid = true;
+    }
+
+    if (query.types && query.types.length) {
+      // TODO: ajuste para cobranças do tipo recorrência
+      where.type = In(query.types);
+    }
+
     return await this.billRepository.find({
       relations: {
         card: true,
         category: true,
         tags: true,
       },
-      where: {
-        account: {
-          id: this.authService.sessionAccount.id,
-        },
-      },
+      where,
       order: {
-        buyDate: 'ASC',
+        [field]: 'DESC',
         installmentIndex: 'ASC',
       },
     });

@@ -1,53 +1,104 @@
 import {
   ActionIcon,
-  Badge,
   Button,
+  Card,
+  Checkbox,
+  Collapse,
   Flex,
+  Grid,
   Group,
-  Menu,
+  LoadingOverlay,
+  Select,
   Table,
   Text,
   Title,
   Tooltip,
 } from '@mantine/core';
-import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconBookmarkFilled, IconCreditCard, IconDotsVertical, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
-import { FC, useEffect, useState } from 'react';
-import { BillType } from '../../../models/enum/billTypes.enum';
+import { IconEraser, IconFilter, IconPlus, IconSearch } from '@tabler/icons-react';
+import { FC, useEffect, useRef, useState } from 'react';
+import { billTypes } from '../../../models/enum/billTypes.enum';
 import http from '../../../services/http.service';
-import { formatDate, formatMoney } from '../../../utils/mask.util';
+import { dateToPlain, formatMoney, MONTH_STR_DATE_FORMAT } from '../../../utils/mask.util';
 import BillingModal from './BillingModal';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './Billing.module.css';
-import { getBillDescription } from '../../../utils/bill.util';
+import { useForm } from '@mantine/form';
+import Tags from '../../components/tags/Tags';
+import { DateInput } from '@mantine/dates';
+import moment from 'moment';
+import { toSelect } from '../../../utils/form.util';
+import { BILLING, BILLING_FILTER_TYPE_ENUM, BUY } from '../../../models/enum/billingFilterType.enum';
+import BillingItem from './BillingItem';
 
-const MODAL_ID = 'modalInstallment';
-
-interface ItemBadgeProps {
-  icon: any;
-  label: string;
-  color: string;
-}
-
-const ItemBadge: FC<ItemBadgeProps> = ({ icon: Icon, label, color }) => (
-  <Badge color={color} mr="sm" variant="light" mt={7}>
-    <Icon size={16} className={classes.icon} />
-    {label}
-  </Badge>
-);
+const NO_TIME_DATE = { hour: 0, minute: 0, second: 0, millisecond: 0 };
 
 const Billing: FC = () => {
+  const form = useForm({
+    initialValues: {
+      dateStart: moment().startOf('month').toDate(),
+      dateEnd: moment().endOf('month').toDate(),
+      filterType: BILLING.value,
+      unpaid: true,
+      paid: true,
+      categories: [],
+      cards: [],
+      tags: [],
+      types: []
+    },
+  });
+
   const [data, setData] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filterType, setFilterType] = useState(BILLING.value);
 
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle }] = useDisclosure(false);
+  const [filterOpened, { toggle: toggleFilter }] = useDisclosure(false);
 
-  useEffect(() => {
-    findAll();
-  }, []);
+  const filter = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(
+    () => {
+      loadCards();
+      loadCategories();
+      loadTags();
+      findAll();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   const findAll = async () => {
-    const [response, error] = await http.get<any[]>('/bill/findAll');
+    setLoading(true);
+
+    const query = new URLSearchParams();
+
+    query.append("start", dateToPlain(form.values.dateStart));
+    query.append("end", dateToPlain(form.values.dateEnd));
+    query.append("unpaid", form.values.unpaid.toString());
+    query.append("paid", form.values.paid.toString());
+    query.append("filterType", form.values.filterType);
+
+    form.values.categories.forEach(it => {
+      query.append("categories[]", it);
+    });
+
+    form.values.cards.forEach(it => {
+      query.append("cards[]", it);
+    });
+
+    form.values.tags.forEach(it => {
+      query.append("tags[]", it);
+    });
+
+    form.values.types.forEach(it => {
+      query.append("types[]", it);
+    });
+
+    const [response, error] = await http.get<any[]>(`/bill/findAll?${query.toString()}`);
 
     if (error) {
       notifications.show({
@@ -57,7 +108,52 @@ const Billing: FC = () => {
       });
     }
 
+    setLoading(false);
+
     setData(response || []);
+    setFilterType(form.values.filterType);
+  };
+
+  const loadCards = async () => {
+    const [response, error] = await http.get<any[]>('/card/findAll');
+
+    if (error) {
+      notifications.show({
+        color: 'red',
+        title: 'Erro',
+        message: 'Ocorreu um erro inesperado ao carregar a página.',
+      });
+    }
+
+    setCards(response || []);
+  };
+
+  const loadCategories = async () => {
+    const [response, error] = await http.get<any[]>('/category/findAll');
+
+    if (error) {
+      notifications.show({
+        color: 'red',
+        title: 'Erro',
+        message: 'Ocorreu um erro inesperado ao carregar a página.',
+      });
+    }
+
+    setCategories(response || []);
+  };
+
+  const loadTags = async () => {
+    const [response, error] = await http.get<any[]>('/tag/findAll');
+
+    if (error) {
+      notifications.show({
+        color: 'red',
+        title: 'Erro',
+        message: 'Ocorreu um erro inesperado ao carregar a página.',
+      });
+    }
+
+    setTags(response || []);
   };
 
   const toggleModal = () => {
@@ -67,87 +163,29 @@ const Billing: FC = () => {
     }
   };
 
-  const deleteSingleBill = async (billId: string) => {
-    const [, error] = await http.delete(`/bill/deleteSingle/${billId}`);
 
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro ao excluir o registro.',
-      });
-    } else {
-      findAll();
-    }
+  const clear = () => {
+    form.reset();
+    setTimeout(() => {
+      filter.current?.click();
+    }, 50);
   };
 
-  const deleteInstallmentSingle = (billId: string) => {
-    modals.close(MODAL_ID);
-    deleteSingleBill(billId);
-  };
+  const sortByDate = (items: any[]) => {
+    const result: any[] = [];
+    let lastDate: moment.Moment | null = null;
 
-  const deleteInstallment = async (billId: string, type: string) => {
-    modals.close(MODAL_ID);
+    items.forEach((it: any) => {
+      const date = moment(it[filterType === BUY.value ? 'buyDate' : 'billDate']).set(NO_TIME_DATE);
+      if (lastDate === null || !date.isSame(lastDate)) {
+        result.push({ date, items: [it] });
+        lastDate = date;
+      } else {
+        result[result.length - 1].items.push(it);
+      }
+    });
 
-    const [, error] = await http.post(`/bill/delete/${billId}`, { type });
-
-    if (error) {
-      notifications.show({
-        color: 'red',
-        title: 'Erro',
-        message: 'Ocorreu um erro ao excluir o registro.',
-      });
-    } else {
-      findAll();
-    }
-  };
-
-  const deleteBill = (bill: any) => {
-    if (bill.type === BillType.INSTALLMENTS) {
-      modals.open({
-        modalId: MODAL_ID,
-        title: 'Exclusão de registro',
-        children: (
-          <>
-            <Text>
-              Você está removendo um lançamento parcelado, o que deseja fazer?
-            </Text>
-            <Group mt="md">
-              <Button
-                fullWidth={true}
-                color="red"
-                onClick={deleteInstallment.bind(null, bill.id, 'all')}
-              >
-                Apagar todas as parcelas
-              </Button>
-              <Button
-                fullWidth={true}
-                color="red"
-                onClick={deleteInstallmentSingle.bind(null, bill.id)}
-              >
-                Apagar somente esta parcela
-              </Button>
-              <Button
-                fullWidth={true}
-                color="red"
-                onClick={deleteInstallment.bind(null, bill.id, 'next')}
-              >
-                Apagar esta e as próximas parcelas
-              </Button>
-              <Button fullWidth={true}>Cancelar</Button>
-            </Group>
-          </>
-        ),
-      });
-    } else {
-      modals.openConfirmModal({
-        title: 'Exclusão de registro',
-        children: <Text>Deseja mesmo excluir este registro?</Text>,
-        labels: { confirm: 'Excluir', cancel: 'Cancelar' },
-        confirmProps: { color: 'red' },
-        onConfirm: () => deleteSingleBill(bill.id),
-      });
-    }
+    return result;
   };
 
   return (
@@ -156,86 +194,116 @@ const Billing: FC = () => {
     >
       <Flex justify="space-between">
         <Title order={2}>Meus lançamentos</Title>
-        <Tooltip label="Cadastrar novo lançamento" position="left-end">
-          <ActionIcon onClick={toggle} size="lg">
-            <IconPlus />
-          </ActionIcon>
-        </Tooltip>
+        <Group>
+          <Tooltip label="Filtrar lançamentos" position="left-end">
+            <ActionIcon onClick={toggleFilter} size="lg" color="yellow">
+              <IconFilter />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Cadastrar novo lançamento" position="left-end">
+            <ActionIcon onClick={toggle} size="lg">
+              <IconPlus />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Flex>
+      <Collapse in={filterOpened} pos="relative">
+        <LoadingOverlay visible={loading} />
+        <div className={classes.filters}>
+          <Grid>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Group align="flex-end" grow={true}>
+                <DateInput
+                  label="Período"
+                  mb="md"
+                  firstDayOfWeek={0}
+                  valueFormat="DD/MM/YYYY"
+                  {...form.getInputProps('dateStart')}
+                />
+                <DateInput
+                  label=""
+                  mb="md"
+                  firstDayOfWeek={0}
+                  valueFormat="DD/MM/YYYY"
+                  {...form.getInputProps('dateEnd')}
+                />
+              </Group>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Select label="Filtrar por" data={BILLING_FILTER_TYPE_ENUM} {...form.getInputProps('filterType')} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Tags label="Categorias" data={toSelect(categories)} mb="md" {...form.getInputProps('categories')} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Tags label="Cartões" data={toSelect(cards)} mb="md" {...form.getInputProps('cards')} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Tags label="Marcadores" data={toSelect(tags)} mb="md" {...form.getInputProps('tags')} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Tags label="Tipos" data={billTypes} mb="md" {...form.getInputProps('types')} />
+            </Grid.Col>
+            <Grid.Col>
+              <Group justify="space-between">
+                <Group>
+                  <Checkbox checked={form.values.unpaid} label="Não pagas" {...form.getInputProps('unpaid')} />
+                  <Checkbox checked={form.values.paid} label="Pagas" ml="md" {...form.getInputProps('paid')} />
+                </Group>
+                <Group>
+                  <Tooltip label="Limpar todos os filtros" position="left-end">
+                    <Button leftSection={<IconEraser size={15} />} onClick={clear} color='gray'>Limpar</Button>
+                  </Tooltip>
+                  <Button id="billing-filter" leftSection={<IconSearch size={15} />} onClick={findAll} ref={filter}>Filtrar</Button>
+                </Group>
+              </Group>
+            </Grid.Col>
+          </Grid>
+        </div>
+      </Collapse>
       {data.length > 0 && (
-        <Table
-          striped={true}
-          withColumnBorders={true}
-          withTableBorder={true}
-          withRowBorders={true}
-          mt="lg"
-        >
-          <Table.Tbody>
-            {data.map((it) => (
-              <Table.Tr key={it.id}>
-                <Table.Td className={classes.item}>
-                  <div className={classes.itemBody}>
-                    <div className={classes.bodyContent}>
-                      <span className={classes.dates}>
-                        {formatDate(it.buyDate)} - {formatDate(it.billDate)}
-                      </span>
-                      <Title order={4}>{getBillDescription(it)}</Title>
-                      {(it.category || it.card || (it.tags && it.tags.length)) && (
-                        <div className={classes.tags}>
-                          {it.category && (
-                            <ItemBadge
-                              icon={IconList}
-                              color="cyan"
-                              label={it.category.label}
-                            />
-                          )}
-                          {it.card && (
-                            <ItemBadge
-                              icon={IconCreditCard}
-                              color="green"
-                              label={it.card.label}
-                            />
-                          )}
-                          {it.tags && it.tags.length > 0 && (
-                            <span>
-                              {it.tags.map((tag: any) => (
-                                <ItemBadge
-                                  key={tag.id}
-                                  icon={IconBookmarkFilled}
-                                  color="orange"
-                                  label={tag.label}
-                                />
-                              ))}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span className={classes.money}>
-                      <span>R$</span>
-                      <span>{formatMoney(it.amount)}</span>
-                    </span>
-                    <Menu shadow="md" position="bottom-end" id={it.id}>
-                      <Menu.Target>
-                        <ActionIcon variant="transparent" color="gray">
-                          <IconDotsVertical />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconTrash color="red" />}
-                          onClick={deleteBill.bind(null, it)}
-                        >
-                          Remover
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </div>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+        <>
+          {sortByDate(data).map((it, index) => (
+            <Table key={index}>
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Td style={{ fontSize: 11, paddingTop: 20 }}>
+                    {it.date.format(MONTH_STR_DATE_FORMAT)}
+                  </Table.Td>
+                </Table.Tr>
+                {it.items.map((bill: any) => <BillingItem bill={bill} key={bill.id} findAll={findAll} />)}
+              </Table.Tbody>
+            </Table>
+          ))}
+          <Grid mt="xl" mb="xl">
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card>
+                <Text fw={500} size="md">Total de lançamentos</Text>
+                <Text style={{ fontSize: 25 }} ta="center">
+                  {data.length}
+                </Text>
+              </Card>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card>
+                <Text fw={500} size="md">Valor total</Text>
+                <Text style={{ fontSize: 25 }} ta="center">R$ {formatMoney(data.reduce((t, i) => t + i.amount, 0))}</Text>
+              </Card>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+              <Card>
+                <Text fw={500} size="md">Total pago</Text>
+                <Text style={{ fontSize: 25 }} ta="center">R$ {formatMoney(data.filter(it => it.paid).reduce((t, i) => t + i.amount, 0))}</Text>
+              </Card>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 3, lg: 3 }}>
+              <Card>
+                <Text fw={500} size="md">Total pendente</Text>
+                <Text style={{ fontSize: 25 }} ta="center">R$ {formatMoney(data.filter(it => !it.paid).reduce((t, i) => t + i.amount, 0))}</Text>
+              </Card>
+            </Grid.Col>
+          </Grid>
+        </>
       )}
       {opened && <BillingModal onClose={toggleModal} />}
     </div>

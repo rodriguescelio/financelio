@@ -66,7 +66,7 @@ const Tags: FC<any> = ({ data, value, onChange, ...inputProps }) => {
         onRemove={() => remove(itemValue)}
         styles={{
           label: {
-            lineHeight: '25px',
+            lineHeight: '22px',
           },
         }}
       >
@@ -108,11 +108,13 @@ const Tags: FC<any> = ({ data, value, onChange, ...inputProps }) => {
           </Pill.Group>
         </PillsInput>
       </Combobox.DropdownTarget>
-      <Combobox.Dropdown>
-        <Combobox.Options>
-          {options.length > 0 && options}
-        </Combobox.Options>
-      </Combobox.Dropdown>
+      {options.length > 0 && (
+        <Combobox.Dropdown>
+          <Combobox.Options>
+            {options}
+          </Combobox.Options>
+        </Combobox.Dropdown>
+      )}
     </Combobox>
   );
 };

@@ -17,7 +17,7 @@ import moment from 'moment';
 import { FC, useEffect, useState } from 'react';
 import { BillType, billTypes } from '../../../models/enum/billTypes.enum';
 import http from '../../../services/http.service';
-import { BR_DATE_FORMAT } from '../../../utils/mask.util';
+import { BR_DATE_FORMAT, MONTH_STR_DATE_FORMAT } from '../../../utils/mask.util';
 import MoneyInput from '../../components/moneyInput/MoneyInput';
 import { toSelect } from '../../../utils/form.util';
 import Tags from '../../components/tags/Tags';
@@ -201,7 +201,7 @@ const BillingModal: FC<BillingModalProps> = ({ onClose }) => {
         Array.from(Array(5), (_, monthIndex) => {
           const date = selectedDate.month(initialMonth + monthIndex);
           return {
-            label: date.format('DD MMM. YYYY'),
+            label: date.format(MONTH_STR_DATE_FORMAT),
             value: date.format(BR_DATE_FORMAT),
           };
         })

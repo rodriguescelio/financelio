@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { BillDTO } from 'src/model/dto/bill.dto';
 import { BillDeleteRequestDTO } from 'src/model/dto/billDeleteRequest.dto';
 import { Bill } from 'src/model/entity/bill.entity';
@@ -14,8 +22,8 @@ export class BillController {
   }
 
   @Get('findAll')
-  findAll(): Promise<Bill[]> {
-    return this.billService.findAll();
+  findAll(@Query() query: any[]): Promise<Bill[]> {
+    return this.billService.findAll(query);
   }
 
   @Delete('deleteSingle/:id')
@@ -24,8 +32,10 @@ export class BillController {
   }
 
   @Post('delete/:id')
-  delete(@Param() params: any, @Body() body: BillDeleteRequestDTO): Promise<void> {
+  delete(
+    @Param() params: any,
+    @Body() body: BillDeleteRequestDTO,
+  ): Promise<void> {
     return this.billService.delete(params.id, body);
   }
-
 }

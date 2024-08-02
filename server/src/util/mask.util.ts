@@ -2,6 +2,7 @@ import * as moment from 'moment';
 import StringMask from 'string-mask';
 
 export const BR_DATE_FORMAT = 'DD/MM/YYYY';
+export const PLAIN_DATE_FORMAT = 'DDMMYYYY';
 
 export const formatMoney = (value: number) =>
   new StringMask('#.##0,00', { reverse: true }).apply(
